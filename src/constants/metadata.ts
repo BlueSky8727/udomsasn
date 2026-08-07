@@ -1,0 +1,106 @@
+/**
+ * metadata.ts — นิยามเดียวของคำว่า "metadata ครบ" ตามเกณฑ์ R1
+ *
+ * ใช้ที่เดียวกันทั้ง
+ *  - ฟอร์มอัปโหลด (บอกผู้ใช้ว่ายังขาดช่องไหน)
+ *  - ตัวคำนวณ hasCompleteMetadata ที่ส่งเข้า assertTransition()
+ *  - ผลตรวจ R1 ของทั้งคนและ AI
+ *
+ * เหตุผลเดียวกับกฎเหล็กข้อ 1: ห้ามให้แต่ละ API เช็ค metadata กันคนละแบบ
+ */
+
+import type { RubricCode } from './rubric';
+
+/** ฟิลด์ที่ R1 บังคับ */
+export const REQUIRED_METADATA_FIELDS = [
+  'title',
+  'description',
+  'subject',
+  'gradeLevel',
+  'learningObjectives',
+  'mediaType',
+] as const;
+
+export type RequiredMetadataField = (typeof REQUIRED_METADATA_FIELDS)[number];
+
+/** ฟิลด์ที่ควรมีแต่ไม่บล็อกการส่งตรวจ */
+export const RECOMMENDED_METADATA_FIELDS = ['license', 'tags'] as const;
+
+export type RecommendedMetadataField = (typeof RECOMMENDED_METADATA_FIELDS)[number];
+
+export type MetadataField = RequiredMetadataField | RecommendedMetadataField;
+
+/** ชื่อช่องภาษาไทย ใช้ทั้งใน label ของฟอร์มและข้อความแจ้งเตือน */
+export const METADATA_FIELD_LABELS: Record<MetadataField, string> = {
+  title: 'ชื่อเรื่อง',
+  description: 'คำอธิบาย',
+  subject: 'วิชา',
+  gradeLevel: 'ระดับชั้น',
+  learningObjectives: 'จุดประสงค์การเรียนรู้',
+  mediaType: 'ประเภทสื่อ',
+  license: 'สัญญาอนุญาต',
+  tags: 'แท็ก',
+};
+
+export const METADATA_FIELD_HINTS: Partial<Record<MetadataField, string>> = {
+  description: 'อธิบายว่าสื่อนี้คืออะไร ใช้สอนตอนไหน และคนอื่นเอาไปใช้ยังไง',
+  learningObjectives: 'เขียนเป็นข้อ ๆ ว่าผู้เรียนจะทำอะไรได้หลังใช้สื่อนี้',
+  license: 'ระบุเงื่อนไขการนำไปใช้ต่อ เกี่ยวข้องกับเกณฑ์ R6',
+};
+
+/**
+ * ความยาวขั้นต่ำ กันการใส่ค่ามาให้ผ่าน ๆ เช่นพิมพ์ "-"
+ * ปรับได้ตามที่ใช้งานจริง แต่ต้องปรับที่นี่ที่เดียว
+ */
+export const MIN_LENGTH: Partial<Record<RequiredMetadataField, number>> = {
+  title: 5,
+  description: 20,
+  learningObjectives: 15,
+};
+
+/** ทรงข้อมูลที่ฟังก์ชันในไฟล์นี้ต้องการ — รับได้ทั้งจากฟอร์มและจากแถวใน media */
+export type MediaMetadataInput = Partial<Record<RequiredMetadataField, unknown>> & {
+  license?: unknown;
+  tags?: unknown;
+};
+
+const textLength = (value: unknown): number =>
+  typeof value === 'string' ? value.trim().length : 0;
+
+/** ช่องที่ยังกรอกไม่ครบตาม R1 */
+export function missingMetadataFields(
+  metadata: MediaMetadataInput,
+): readonly RequiredMetadataField[] {
+  return REQUIRED_METADATA_FIELDS.filter(
+    (field) => textLength(metadata[field]) < (MIN_LENGTH[field] ?? 1),
+  );
+}
+
+/**
+ * ค่าที่ต้องส่งเข้า assertTransition() ในฟิลด์ hasCompleteMetadata
+ * ต้องคำนวณฝั่งเซิร์ฟเวอร์จากแถวในฐานข้อมูลเสมอ (กฎเหล็กข้อ 2)
+ */
+export function isMetadataComplete(metadata: MediaMetadataInput): boolean {
+  return missingMetadataFields(metadata).length === 0;
+}
+
+/** ข้อความบอกผู้ใช้ว่าขาดอะไร เช่น "ยังกรอกไม่ครบ: คำอธิบาย, วิชา" */
+export function describeMissingMetadata(metadata: MediaMetadataInput): string | null {
+  const missing = missingMetadataFields(metadata);
+  if (missing.length === 0) return null;
+  return `ยังกรอกไม่ครบ: ${missing.map((f) => METADATA_FIELD_LABELS[f]).join(', ')}`;
+}
+
+/** ช่องที่แนะนำให้กรอกแต่ยังว่างอยู่ — เตือนได้ แต่ไม่บล็อกการส่งตรวจ */
+export function missingRecommendedFields(
+  metadata: MediaMetadataInput,
+): readonly RecommendedMetadataField[] {
+  return RECOMMENDED_METADATA_FIELDS.filter((field) => {
+    const value = metadata[field];
+    if (field === 'tags') return !Array.isArray(value) || value.length === 0;
+    return textLength(value) < 1;
+  });
+}
+
+/** เกณฑ์ที่ผลของฟังก์ชันในไฟล์นี้ใช้ตัดสิน */
+export const METADATA_RUBRIC_CODE: RubricCode = 'R1';

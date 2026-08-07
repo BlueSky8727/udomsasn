@@ -1,0 +1,17 @@
+// src/constants/enterprise-data.ts
+import type { MediaStatus } from './workflow';
+export type ReviewJob={id:string;title:string;owner:string;subject:string;grade:string;version:number;status:MediaStatus;age:string;aiRisk:'ต่ำ'|'กลาง'|'สูง';assignee?:string};
+export const REVIEW_JOBS:ReviewJob[]=[
+{id:'MED-260807-014',title:'วงจรไฟฟ้ากระแสตรง: ชุดกิจกรรมทดลอง',owner:'อ.นภัสสร สุขใจ',subject:'วิทยาศาสตร์',grade:'ม.3',version:2,status:'IN_REVIEW',age:'18 นาที',aiRisk:'ต่ำ',assignee:'อ.กิตติชัย'},
+{id:'MED-260807-013',title:'การอ่านจับใจความจากข่าวร่วมสมัย',owner:'อ.วรรณา แสงทอง',subject:'ภาษาไทย',grade:'ม.2',version:1,status:'PENDING',age:'42 นาที',aiRisk:'กลาง'},
+{id:'MED-260807-012',title:'Worksheet: Linear Equation',owner:'อ.ธนวัฒน์ มณี',subject:'คณิตศาสตร์',grade:'ม.1',version:3,status:'REVISION',age:'2 ชม.',aiRisk:'สูง'},
+{id:'MED-260807-011',title:'ภูมิอากาศเอเชียตะวันออกเฉียงใต้',owner:'อ.ปภาวดี ใจดี',subject:'สังคมศึกษา',grade:'ม.2',version:1,status:'PENDING',age:'3 ชม.',aiRisk:'ต่ำ'},
+];
+export const TIMELINE=[
+{time:'09:05',title:'อนุมัติสื่อ MED-260807-010',detail:'อ.กิตติชัย · ผ่าน R1–R9 และเผยแพร่เข้าคลัง'},
+{time:'08:47',title:'Typhoon คัดกรองเสร็จ',detail:'MED-260807-014 · พบ 1 จุดที่ควรตรวจ R6'},
+{time:'08:31',title:'ส่งฉบับแก้ไข v3',detail:'Worksheet: Linear Equation · กลับเข้าคิวตรวจ'},
+{time:'08:10',title:'ดาวน์โหลดสื่อไปใช้สอน',detail:'การสังเคราะห์ด้วยแสง · ดาวน์โหลดครั้งที่ 38'},
+];
+export const QA_STATS=[
+{label:'สื่อในคลัง',value:'428',detail:'+24 เดือนนี้'}, {label:'รอตรวจ',value:'12',detail:'เฉลี่ย 5.2 ชม.'}, {label:'อัตราผ่าน',value:'81%',detail:'+4.1% จากเดือนก่อน'}, {label:'นำกลับไปใช้',value:'1,284',detail:'+18% เดือนนี้'}];

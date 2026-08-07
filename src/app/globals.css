@@ -1,0 +1,29 @@
+@import 'tailwindcss';
+
+:root {
+  color-scheme: light;
+  --surface: oklch(0.985 0.004 245); --panel: oklch(1 0 0); --panel-hover: oklch(0.965 0.009 245); --sidebar: oklch(0.975 0.006 245); --line: oklch(0.91 0.012 245);
+  --ink: oklch(0.23 0.025 255); --ink-muted: oklch(0.47 0.025 255); --ink-faint: oklch(0.63 0.02 255);
+  --brand: oklch(0.56 0.18 245); --brand-strong: oklch(0.49 0.19 245); --brand-contrast: oklch(1 0 0);
+  --status-draft: oklch(0.52 0.02 255); --status-pending: oklch(0.62 0.15 72); --status-in-review: oklch(0.57 0.16 250); --status-revision: oklch(0.62 0.17 45); --status-approved: oklch(0.54 0.15 155); --status-rejected: oklch(0.55 0.2 25); --status-archived: oklch(0.5 0.03 265);
+}
+[data-theme='dark'] {
+  color-scheme: dark;
+  --surface: oklch(0.16 0.015 255); --panel: oklch(0.205 0.018 255); --panel-hover: oklch(0.245 0.02 255); --sidebar: oklch(0.18 0.018 255); --line: oklch(0.29 0.025 255);
+  --ink: oklch(0.95 0.008 250); --ink-muted: oklch(0.74 0.015 250); --ink-faint: oklch(0.57 0.02 250);
+  --brand: oklch(0.72 0.15 240); --brand-strong: oklch(0.66 0.17 240); --brand-contrast: oklch(0.14 0.02 255);
+  --status-draft: oklch(0.72 0.02 255); --status-pending: oklch(0.8 0.14 75); --status-in-review: oklch(0.74 0.13 250); --status-revision: oklch(0.78 0.15 55); --status-approved: oklch(0.76 0.14 155); --status-rejected: oklch(0.71 0.17 20); --status-archived: oklch(0.64 0.03 265);
+}
+@theme inline {
+  --font-sans: var(--font-thai), ui-sans-serif, system-ui, sans-serif;
+  --color-surface: var(--surface); --color-panel: var(--panel); --color-panel-hover: var(--panel-hover); --color-sidebar: var(--sidebar); --color-line: var(--line);
+  --color-ink: var(--ink); --color-ink-muted: var(--ink-muted); --color-ink-faint: var(--ink-faint); --color-brand: var(--brand); --color-brand-strong: var(--brand-strong); --color-brand-contrast: var(--brand-contrast);
+  --color-status-draft: var(--status-draft); --color-status-pending: var(--status-pending); --color-status-in-review: var(--status-in-review); --color-status-revision: var(--status-revision); --color-status-approved: var(--status-approved); --color-status-rejected: var(--status-rejected); --color-status-archived: var(--status-archived);
+}
+html { word-break: normal; overflow-wrap: break-word; scroll-behavior: smooth; }
+body { background: var(--surface); color: var(--ink); -webkit-font-smoothing: antialiased; }
+body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: -1; background: radial-gradient(circle at 88% 0%, color-mix(in oklch, var(--brand) 8%, transparent), transparent 30%); }
+::selection { background-color: color-mix(in oklch, var(--brand) 28%, transparent); }
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
