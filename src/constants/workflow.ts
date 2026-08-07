@@ -125,7 +125,10 @@ export type TransitionRule = {
   intent: 'primary' | 'neutral' | 'warning' | 'danger';
 };
 
-const rule = (r: Partial<TransitionRule> & Pick<TransitionRule, 'from' | 'to' | 'roles' | 'label' | 'description' | 'intent'>): TransitionRule => ({
+const rule = (
+  r: Partial<TransitionRule> &
+    Pick<TransitionRule, 'from' | 'to' | 'roles' | 'label' | 'description' | 'intent'>,
+): TransitionRule => ({
   ownerOnly: false,
   assigneeOnly: false,
   requiresReason: false,
@@ -291,8 +294,7 @@ export const DENIAL_MESSAGES: Record<DenialCode, string> = {
 };
 
 export type TransitionCheck =
-  | { ok: true; rule: TransitionRule }
-  | { ok: false; code: DenialCode; message: string };
+  { ok: true; rule: TransitionRule } | { ok: false; code: DenialCode; message: string };
 
 export class WorkflowError extends Error {
   readonly code: DenialCode;

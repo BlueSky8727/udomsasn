@@ -38,9 +38,7 @@ const themeScript = `
 })();
 `;
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th" className={notoSansThai.variable} suppressHydrationWarning>
       <body className="min-h-screen bg-surface font-sans text-ink">

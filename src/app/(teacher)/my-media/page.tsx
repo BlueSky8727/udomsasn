@@ -1,3 +1,61 @@
 // src/app/(teacher)/my-media/page.tsx
-import Link from 'next/link';import { AppShell } from '@/components/ui/app-shell';import { PageHeading } from '@/components/ui/page-heading';import { Metric,Pill,SectionCard } from '@/components/ui/enterprise';import { DEMO_MEDIA } from '@/constants/mock-data';import { STATUS_LABELS } from '@/constants/workflow';import { getViewerRole } from '@/lib/auth';
-export default async function MyMedia(){const role=await getViewerRole();return <AppShell role={role}><PageHeading eyebrow="Contributor Workspace" title="สื่อของฉัน" description="จัดการร่าง ติดตามผลตรวจ แก้ไข และดูประวัติเวอร์ชันของสื่อที่คุณเป็นเจ้าของ"/><div className="grid gap-4 sm:grid-cols-3"><Metric label="งานทั้งหมด" value="18" detail="5 รายการมีความเคลื่อนไหวสัปดาห์นี้" icon="folder"/><Metric label="ต้องดำเนินการ" value="3" detail="2 ให้แก้ไข · 1 ร่าง" icon="edit"/><Metric label="เผยแพร่แล้ว" value="11" detail="ถูกดาวน์โหลดรวม 246 ครั้ง" icon="check"/></div><SectionCard title="รายการของฉัน"><div className="space-y-3">{DEMO_MEDIA.map((m,i)=><div key={m.id} className="flex flex-col gap-3 rounded-xl border border-line bg-surface/70 p-4 md:flex-row md:items-center"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="truncate text-sm font-semibold">{m.title}</p><Pill>{STATUS_LABELS[m.status]}</Pill></div><p className="mt-1 text-xs text-ink-faint">{m.subject} · {m.grade} · เวอร์ชัน {i+1} · แก้ไขล่าสุด 7 ส.ค. 2569</p></div><div className="flex gap-2"><button className="rounded-lg border border-line bg-panel px-3 py-2 text-xs font-semibold">ประวัติเวอร์ชัน</button><Link href={`/review/${m.id}`} className="rounded-lg bg-brand/10 px-3 py-2 text-xs font-semibold text-brand">เปิดรายละเอียด</Link></div></div>)}</div></SectionCard></AppShell>}
+import Link from 'next/link';
+import { AppShell } from '@/components/ui/app-shell';
+import { PageHeading } from '@/components/ui/page-heading';
+import { Metric, Pill, SectionCard } from '@/components/ui/enterprise';
+import { DEMO_MEDIA } from '@/constants/mock-data';
+import { STATUS_LABELS } from '@/constants/workflow';
+import { getViewerRole } from '@/lib/auth';
+export default async function MyMedia() {
+  const role = await getViewerRole();
+  return (
+    <AppShell role={role}>
+      <PageHeading
+        eyebrow="Contributor Workspace"
+        title="สื่อของฉัน"
+        description="จัดการร่าง ติดตามผลตรวจ แก้ไข และดูประวัติเวอร์ชันของสื่อที่คุณเป็นเจ้าของ"
+      />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Metric
+          label="งานทั้งหมด"
+          value="18"
+          detail="5 รายการมีความเคลื่อนไหวสัปดาห์นี้"
+          icon="folder"
+        />
+        <Metric label="ต้องดำเนินการ" value="3" detail="2 ให้แก้ไข · 1 ร่าง" icon="edit" />
+        <Metric label="เผยแพร่แล้ว" value="11" detail="ถูกดาวน์โหลดรวม 246 ครั้ง" icon="check" />
+      </div>
+      <SectionCard title="รายการของฉัน">
+        <div className="space-y-3">
+          {DEMO_MEDIA.map((m, i) => (
+            <div
+              key={m.id}
+              className="flex flex-col gap-3 rounded-xl border border-line bg-surface/70 p-4 md:flex-row md:items-center"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-sm font-semibold">{m.title}</p>
+                  <Pill>{STATUS_LABELS[m.status]}</Pill>
+                </div>
+                <p className="mt-1 text-xs text-ink-faint">
+                  {m.subject} · {m.grade} · เวอร์ชัน {i + 1} · แก้ไขล่าสุด 7 ส.ค. 2569
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button className="rounded-lg border border-line bg-panel px-3 py-2 text-xs font-semibold">
+                  ประวัติเวอร์ชัน
+                </button>
+                <Link
+                  href={`/review/${m.id}`}
+                  className="rounded-lg bg-brand/10 px-3 py-2 text-xs font-semibold text-brand"
+                >
+                  เปิดรายละเอียด
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </AppShell>
+  );
+}

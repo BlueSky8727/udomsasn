@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from '@/components/ui/icons';
 import {
   ACCEPT_ATTRIBUTE,
   FILE_KIND_LABELS,
@@ -77,7 +78,9 @@ export function FilePicker({ files, onChange }: FilePickerProps) {
 
   return (
     <div className="space-y-3">
-      <div
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);
@@ -88,53 +91,33 @@ export function FilePicker({ files, onChange }: FilePickerProps) {
           setDragging(false);
           addFiles(e.dataTransfer.files);
         }}
-        className={`rounded-xl border border-dashed p-6 text-center transition-colors ${
-          dragging ? 'border-brand bg-brand/5' : 'border-line bg-panel/50'
+        className={`w-full rounded-xl border border-dashed px-4 py-7 text-center transition-colors ${
+          dragging ? 'border-brand bg-brand/8' : 'border-brand/25 bg-brand/[0.03] hover:bg-brand/8'
         }`}
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="mx-auto size-8 text-ink-faint"
-          aria-hidden
-        >
-          <path d="M12 16V4" />
-          <path d="m7 9 5-5 5 5" />
-          <path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2" />
-        </svg>
+        <Icon name="cloudUpload" className="mx-auto size-8 text-brand" />
 
-        <p className="mt-3 text-sm text-ink-muted">ลากไฟล์มาวางที่นี่ หรือ</p>
+        <p className="mt-3 text-sm font-medium text-ink">คลิกหรือลากไฟล์มาวางที่นี่</p>
 
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="mt-2 rounded-lg border border-line bg-panel px-4 py-2 text-sm font-medium transition-colors hover:bg-panel-hover"
-        >
-          เลือกไฟล์จากเครื่อง
-        </button>
-
-        <p className="mt-3 text-xs text-ink-faint">
-          รองรับ PDF สไลด์ เอกสาร รูปภาพ วิดีโอ เสียง · ไม่เกิน{' '}
-          {formatBytes(MAX_UPLOAD_BYTES)} ต่อไฟล์
+        <p className="mt-1.5 text-xs leading-5 text-ink-faint">
+          รองรับไฟล์รูปภาพ PDF วิดีโอ และไฟล์เอกสาร
+          <br />
+          ไม่เกิน {formatBytes(MAX_UPLOAD_BYTES)} ต่อไฟล์
         </p>
+      </button>
 
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept={ACCEPT_ATTRIBUTE}
-          className="hidden"
-          onChange={(e) => {
-            addFiles(e.target.files);
-            // เคลียร์ค่า เพื่อให้เลือกไฟล์เดิมซ้ำแล้ว event ยังยิง
-            e.target.value = '';
-          }}
-        />
-      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept={ACCEPT_ATTRIBUTE}
+        className="hidden"
+        onChange={(e) => {
+          addFiles(e.target.files);
+          // เคลียร์ค่า เพื่อให้เลือกไฟล์เดิมซ้ำแล้ว event ยังยิง
+          e.target.value = '';
+        }}
+      />
 
       {rejected.length > 0 && (
         <ul className="space-y-1 rounded-lg border border-status-rejected/30 bg-status-rejected/8 p-3 text-xs text-status-rejected">
@@ -147,7 +130,10 @@ export function FilePicker({ files, onChange }: FilePickerProps) {
       {files.length > 0 && (
         <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-panel">
           {files.map((file, index) => (
-            <li key={`${file.name}-${file.lastModified}`} className="flex items-center gap-3 px-4 py-3">
+            <li
+              key={`${file.name}-${file.lastModified}`}
+              className="flex items-center gap-3 px-4 py-3"
+            >
               <span className="shrink-0 rounded-md bg-surface px-2 py-1 text-[11px] text-ink-faint">
                 {FILE_KIND_LABELS[fileKindOf(file.name)]}
               </span>

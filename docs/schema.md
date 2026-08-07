@@ -64,7 +64,7 @@ create type rubric_result as enum ('PASS', 'FAIL', 'NA');
 | `subject` | text | วิชา R1 |
 | `grade_level` | text | ระดับชั้น R1/R4 |
 | `learning_objectives` | text | จุดประสงค์ R1/R2 |
-| `media_type` | text | ประเภทสื่อ R1 |
+| `media_type` | text | ประเภทสื่อ ไม่บังคับ ฟอร์มปัจจุบันยังไม่เก็บค่านี้ |
 | `tags` | text[] | ใช้ค้นหา |
 | `license` | text | R6 |
 | `status` | media_status | ค่าเริ่มต้น `DRAFT` |

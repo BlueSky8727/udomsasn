@@ -1,3 +1,138 @@
 // src/app/review/[id]/page.tsx
-import { AppShell } from '@/components/ui/app-shell';import { Icon } from '@/components/ui/icons';import { Pill,SectionCard } from '@/components/ui/enterprise';import { RUBRIC_ITEMS } from '@/constants/rubric';import { REVIEW_JOBS } from '@/constants/enterprise-data';import { getViewerRole } from '@/lib/auth';
-export default async function ReviewPage({params}:{params:Promise<{id:string}>}){const {id}=await params;const role=await getViewerRole();const job=REVIEW_JOBS.find(x=>x.id===id)??REVIEW_JOBS[0]!;return <AppShell role={role}><div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><div className="flex flex-wrap gap-2"><Pill>Review Workspace</Pill><Pill tone="warn">v{job.version}</Pill></div><h1 className="mt-3 text-2xl font-bold tracking-[-.035em]">{job.title}</h1><p className="mt-2 text-sm text-ink-faint">{job.id} · {job.owner} · {job.subject} · {job.grade}</p></div><div className="flex gap-2"><button className="rounded-xl border border-line bg-panel px-4 py-2.5 text-sm font-semibold">คืนคิว</button><button className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-contrast">บันทึกผลตรวจ</button></div></div><div className="grid gap-6 2xl:grid-cols-[1.15fr_1fr_.78fr]"><SectionCard title="ตัวอย่างไฟล์" description="ไฟล์ private · เปิดผ่าน signed URL เท่านั้น"><div className="grid min-h-[520px] place-items-center rounded-xl border border-dashed border-line bg-surface"><div className="text-center"><span className="mx-auto grid size-16 place-items-center rounded-2xl bg-brand/10 text-brand"><Icon name="file" className="size-7"/></span><p className="mt-4 text-sm font-semibold">lesson-electric-circuit-v2.pdf</p><p className="mt-1 text-xs text-ink-faint">PDF · 8.4 MB · 24 หน้า</p><button className="mt-4 rounded-lg border border-line bg-panel px-3 py-2 text-xs font-semibold">เปิด Preview</button></div></div></SectionCard><SectionCard title="เกณฑ์ R1–R9" description="R1–R7 ต้องผ่านทั้งหมดก่อนอนุมัติ"><div className="space-y-3">{RUBRIC_ITEMS.map(r=><details key={r.code} className="rounded-xl border border-line bg-surface/70 p-3" open={r.code==='R3'}><summary className="cursor-pointer list-none"><div className="flex items-center gap-3"><span className="grid size-8 place-items-center rounded-lg bg-brand/10 text-xs font-bold text-brand">{r.code}</span><div className="min-w-0 flex-1"><p className="text-xs font-semibold">{r.title}</p><p className="mt-1 text-[10px] text-ink-faint">{r.aiRole==='HUMAN_ONLY'?'มนุษย์เท่านั้น':r.aiRole==='CHECKS'?'AI ตรวจช่วยได้':'AI ช่วยขึ้นธง'}</p></div><div className="flex gap-1"><button className="rounded-md bg-status-approved/10 px-2 py-1 text-[10px] font-semibold text-status-approved">ผ่าน</button><button className="rounded-md bg-status-rejected/10 px-2 py-1 text-[10px] font-semibold text-status-rejected">ไม่ผ่าน</button></div></div></summary><p className="mt-3 border-t border-line pt-3 text-[11px] leading-5 text-ink-muted">{r.description}</p></details>)}</div></SectionCard><div className="space-y-6"><SectionCard title="Typhoon AI Screening" description="AI ไม่มีสิทธิ์อนุมัติหรือเปลี่ยนสถานะ"><div className="rounded-xl border border-status-pending/20 bg-status-pending/5 p-4"><div className="flex items-center gap-2 text-status-pending"><Icon name="warning" className="size-4"/><p className="text-xs font-bold">พบ 1 จุดควรตรวจ</p></div><p className="mt-2 text-[11px] leading-5 text-ink-muted">R6: หน้า 18 มีภาพประกอบที่ยังไม่พบข้อความอ้างอิงแหล่งที่มา โปรดตรวจด้วยมนุษย์อีกครั้ง</p></div><div className="mt-3 rounded-xl bg-surface p-4"><p className="text-xs font-semibold">สรุปเนื้อหา</p><p className="mt-2 text-[11px] leading-5 text-ink-muted">ชุดกิจกรรมทดลองวงจรไฟฟ้ากระแสตรง มีจุดประสงค์ ขั้นตอนทดลอง ใบงาน และเฉลยครบชุด เหมาะกับการนำไปใช้ต่อ</p></div><button className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-brand/10 px-3 py-2.5 text-xs font-semibold text-brand"><Icon name="sparkles" className="size-4"/>เรียก Typhoon วิเคราะห์ใหม่</button></SectionCard><SectionCard title="การตัดสิน"><textarea rows={4} placeholder="ข้อเสนอแนะหรือเหตุผล..." className="w-full rounded-xl border border-line bg-surface p-3 text-xs outline-none focus:border-brand"/><div className="mt-3 grid grid-cols-3 gap-2"><button className="rounded-lg bg-status-approved/10 px-2 py-2.5 text-xs font-bold text-status-approved">ผ่าน</button><button className="rounded-lg bg-status-pending/10 px-2 py-2.5 text-xs font-bold text-status-pending">ให้แก้</button><button className="rounded-lg bg-status-rejected/10 px-2 py-2.5 text-xs font-bold text-status-rejected">ไม่ผ่าน</button></div></SectionCard></div></div></AppShell>}
+import { AppShell } from '@/components/ui/app-shell';
+import { Icon } from '@/components/ui/icons';
+import { Pill, SectionCard } from '@/components/ui/enterprise';
+import { RUBRIC_ITEMS } from '@/constants/rubric';
+import { REVIEW_JOBS } from '@/constants/enterprise-data';
+import { getViewerRole } from '@/lib/auth';
+export default async function ReviewPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const role = await getViewerRole();
+  const job = REVIEW_JOBS.find((x) => x.id === id) ?? REVIEW_JOBS[0]!;
+  return (
+    <AppShell role={role}>
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="flex flex-wrap gap-2">
+            <Pill>Review Workspace</Pill>
+            <Pill tone="warn">v{job.version}</Pill>
+          </div>
+          <h1 className="mt-3 text-2xl font-bold tracking-[-.035em]">{job.title}</h1>
+          <p className="mt-2 text-sm text-ink-faint">
+            {job.id} · {job.owner} · {job.subject} · {job.grade}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button className="rounded-xl border border-line bg-panel px-4 py-2.5 text-sm font-semibold">
+            คืนคิว
+          </button>
+          <button className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-contrast">
+            บันทึกผลตรวจ
+          </button>
+        </div>
+      </div>
+      <div className="grid gap-6 2xl:grid-cols-[1.15fr_1fr_.78fr]">
+        <SectionCard title="ตัวอย่างไฟล์" description="ไฟล์ private · เปิดผ่าน signed URL เท่านั้น">
+          <div className="grid min-h-[520px] place-items-center rounded-xl border border-dashed border-line bg-surface">
+            <div className="text-center">
+              <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-brand/10 text-brand">
+                <Icon name="file" className="size-7" />
+              </span>
+              <p className="mt-4 text-sm font-semibold">lesson-electric-circuit-v2.pdf</p>
+              <p className="mt-1 text-xs text-ink-faint">PDF · 8.4 MB · 24 หน้า</p>
+              <button className="mt-4 rounded-lg border border-line bg-panel px-3 py-2 text-xs font-semibold">
+                เปิด Preview
+              </button>
+            </div>
+          </div>
+        </SectionCard>
+        <SectionCard title="เกณฑ์ R1–R9" description="R1–R7 ต้องผ่านทั้งหมดก่อนอนุมัติ">
+          <div className="space-y-3">
+            {RUBRIC_ITEMS.map((r) => (
+              <details
+                key={r.code}
+                className="rounded-xl border border-line bg-surface/70 p-3"
+                open={r.code === 'R3'}
+              >
+                <summary className="cursor-pointer list-none">
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-8 place-items-center rounded-lg bg-brand/10 text-xs font-bold text-brand">
+                      {r.code}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold">{r.title}</p>
+                      <p className="mt-1 text-[10px] text-ink-faint">
+                        {r.aiRole === 'HUMAN_ONLY'
+                          ? 'มนุษย์เท่านั้น'
+                          : r.aiRole === 'CHECKS'
+                            ? 'AI ตรวจช่วยได้'
+                            : 'AI ช่วยขึ้นธง'}
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button className="rounded-md bg-status-approved/10 px-2 py-1 text-[10px] font-semibold text-status-approved">
+                        ผ่าน
+                      </button>
+                      <button className="rounded-md bg-status-rejected/10 px-2 py-1 text-[10px] font-semibold text-status-rejected">
+                        ไม่ผ่าน
+                      </button>
+                    </div>
+                  </div>
+                </summary>
+                <p className="mt-3 border-t border-line pt-3 text-[11px] leading-5 text-ink-muted">
+                  {r.description}
+                </p>
+              </details>
+            ))}
+          </div>
+        </SectionCard>
+        <div className="space-y-6">
+          <SectionCard
+            title="Typhoon AI Screening"
+            description="AI ไม่มีสิทธิ์อนุมัติหรือเปลี่ยนสถานะ"
+          >
+            <div className="rounded-xl border border-status-pending/20 bg-status-pending/5 p-4">
+              <div className="flex items-center gap-2 text-status-pending">
+                <Icon name="warning" className="size-4" />
+                <p className="text-xs font-bold">พบ 1 จุดควรตรวจ</p>
+              </div>
+              <p className="mt-2 text-[11px] leading-5 text-ink-muted">
+                R6: หน้า 18 มีภาพประกอบที่ยังไม่พบข้อความอ้างอิงแหล่งที่มา
+                โปรดตรวจด้วยมนุษย์อีกครั้ง
+              </p>
+            </div>
+            <div className="mt-3 rounded-xl bg-surface p-4">
+              <p className="text-xs font-semibold">สรุปเนื้อหา</p>
+              <p className="mt-2 text-[11px] leading-5 text-ink-muted">
+                ชุดกิจกรรมทดลองวงจรไฟฟ้ากระแสตรง มีจุดประสงค์ ขั้นตอนทดลอง ใบงาน และเฉลยครบชุด
+                เหมาะกับการนำไปใช้ต่อ
+              </p>
+            </div>
+            <button className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-brand/10 px-3 py-2.5 text-xs font-semibold text-brand">
+              <Icon name="sparkles" className="size-4" />
+              เรียก Typhoon วิเคราะห์ใหม่
+            </button>
+          </SectionCard>
+          <SectionCard title="การตัดสิน">
+            <textarea
+              rows={4}
+              placeholder="ข้อเสนอแนะหรือเหตุผล..."
+              className="w-full rounded-xl border border-line bg-surface p-3 text-xs outline-none focus:border-brand"
+            />
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <button className="rounded-lg bg-status-approved/10 px-2 py-2.5 text-xs font-bold text-status-approved">
+                ผ่าน
+              </button>
+              <button className="rounded-lg bg-status-pending/10 px-2 py-2.5 text-xs font-bold text-status-pending">
+                ให้แก้
+              </button>
+              <button className="rounded-lg bg-status-rejected/10 px-2 py-2.5 text-xs font-bold text-status-rejected">
+                ไม่ผ่าน
+              </button>
+            </div>
+          </SectionCard>
+        </div>
+      </div>
+    </AppShell>
+  );
+}

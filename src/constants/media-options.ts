@@ -46,6 +46,28 @@ export const MEDIA_TYPES = [
   'อื่น ๆ',
 ] as const;
 
+/** ระยะเวลาที่ใช้จัดการเรียนรู้ด้วยสื่อชุดนี้ (นาที) */
+export const DURATION_OPTIONS = [60, 120, 180, 240] as const;
+
+/**
+ * ด้านการเรียนรู้ K/P/A
+ * ใช้ร่วมกันทั้งช่องจุดประสงค์การเรียนรู้และตารางการวัดและประเมินผล
+ * เก็บเฉพาะข้อมูล ส่วนสีของแต่ละด้านกำหนดในคอมโพเนนต์
+ */
+export const LEARNING_DOMAINS = [
+  { code: 'K', label: 'ความรู้', en: 'Knowledge' },
+  { code: 'P', label: 'ทักษะ', en: 'Process' },
+  { code: 'A', label: 'เจตคติ/คุณลักษณะ', en: 'Attitude' },
+] as const;
+
+export type LearningDomainCode = (typeof LEARNING_DOMAINS)[number]['code'];
+
+/**
+ * จำนวนจุดประสงค์สูงสุดต่อหนึ่งด้าน (K/P/A แยกกันด้านละ 5 ข้อ)
+ * ฝั่งเซิร์ฟเวอร์ต้องเช็คค่านี้ซ้ำตอนบันทึกด้วย ห้ามเชื่อจำนวนแถวที่ client ส่งมา (กฎเหล็กข้อ 2)
+ */
+export const MAX_OBJECTIVES_PER_DOMAIN = 5;
+
 /** ตัวเลือกสัญญาอนุญาต เกี่ยวข้องกับเกณฑ์ R6 */
 export const LICENSES = [
   'ใช้ได้อิสระภายในหน่วยงาน',

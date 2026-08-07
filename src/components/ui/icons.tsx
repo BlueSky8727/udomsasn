@@ -1,6 +1,265 @@
 // src/components/ui/icons.tsx
 import type { SVGProps, ReactNode } from 'react';
-export type IconName='home'|'search'|'upload'|'folder'|'inbox'|'sparkles'|'bell'|'chevronRight'|'arrowUpRight'|'file'|'download'|'clock'|'check'|'layers'|'users'|'filter'|'grid'|'list'|'more'|'book'|'eye'|'refresh'|'shield'|'edit'|'paperclip'|'calendar'|'x'|'menu'|'chart'|'settings'|'history'|'message'|'lock'|'warning'|'plus';
-const p:Record<IconName,ReactNode>={
-home:<><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9 20v-6h6v6"/></>,search:<><circle cx="11" cy="11" r="7"/><path d="m20 20-3.7-3.7"/></>,upload:<><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></>,folder:<path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/>,inbox:<><path d="M4 13h4l2 3h4l2-3h4"/><path d="M6 5h12l2 8v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5z"/></>,sparkles:<><path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2z"/><path d="m18 14 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/></>,bell:<><path d="M6 9a6 6 0 0 1 12 0v4l2 3H4l2-3z"/><path d="M10 19h4"/></>,chevronRight:<path d="m9 18 6-6-6-6"/>,arrowUpRight:<><path d="M7 17 17 7"/><path d="M9 7h8v8"/></>,file:<><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/></>,download:<><path d="M12 4v11"/><path d="m8 11 4 4 4-4"/><path d="M5 20h14"/></>,clock:<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,check:<path d="m5 12 4 4L19 6"/>,layers:<><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></>,users:<><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 20v-2a4 4 0 0 0-3-3.87"/></>,filter:<path d="M4 5h16l-6 7v5l-4 2v-7z"/>,grid:<><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></>,list:<><path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></>,more:<><circle cx="5" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/></>,book:<><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5A2.5 2.5 0 0 1 20 21z"/></>,eye:<><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6"/><circle cx="12" cy="12" r="2.5"/></>,refresh:<><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M6.1 8a7 7 0 0 1 11.4-2L20 8M4 16l2.5 2a7 7 0 0 0 11.4-2"/></>,shield:<><path d="M12 3 5 6v5c0 4.4 2.7 8.2 7 10 4.3-1.8 7-5.6 7-10V6z"/><path d="m9 12 2 2 4-4"/></>,edit:<><path d="M4 20h4l11-11-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></>,paperclip:<path d="m20.5 11.5-8.7 8.7a6 6 0 0 1-8.5-8.5l9-9a4 4 0 1 1 5.7 5.7l-9 9a2 2 0 1 1-2.8-2.8l8.5-8.5"/>,calendar:<><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></>,x:<path d="m6 6 12 12M18 6 6 18"/>,menu:<path d="M4 7h16M4 12h16M4 17h16"/>,chart:<><path d="M4 20V10M10 20V4M16 20v-7M22 20V7"/></>,settings:<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.96 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3V10h.08A1.7 1.7 0 0 0 4.6 8.96a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 10 3.03V3h4v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.97 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15z"/></>,history:<><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></>,message:<><path d="M4 4h16v12H8l-4 4z"/></>,lock:<><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></>,warning:<><path d="m12 3 10 18H2z"/><path d="M12 9v5M12 18h.01"/></>,plus:<path d="M12 5v14M5 12h14"/>};
-export function Icon({name,className='size-5',...props}:{name:IconName}&SVGProps<SVGSVGElement>){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden {...props}>{p[name]}</svg>}
+export type IconName =
+  | 'home'
+  | 'search'
+  | 'upload'
+  | 'folder'
+  | 'inbox'
+  | 'sparkles'
+  | 'bell'
+  | 'chevronRight'
+  | 'arrowUpRight'
+  | 'file'
+  | 'download'
+  | 'clock'
+  | 'check'
+  | 'layers'
+  | 'users'
+  | 'filter'
+  | 'grid'
+  | 'list'
+  | 'more'
+  | 'book'
+  | 'eye'
+  | 'refresh'
+  | 'shield'
+  | 'edit'
+  | 'paperclip'
+  | 'calendar'
+  | 'x'
+  | 'menu'
+  | 'chart'
+  | 'settings'
+  | 'history'
+  | 'message'
+  | 'lock'
+  | 'warning'
+  | 'plus'
+  | 'cloudUpload'
+  | 'image'
+  | 'info';
+const p: Record<IconName, ReactNode> = {
+  home: (
+    <>
+      <path d="M3 11.5 12 4l9 7.5" />
+      <path d="M5.5 10.5V20h13v-9.5" />
+      <path d="M9 20v-6h6v6" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.7-3.7" />
+    </>
+  ),
+  upload: (
+    <>
+      <path d="M12 16V4" />
+      <path d="m7 9 5-5 5 5" />
+      <path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2" />
+    </>
+  ),
+  folder: (
+    <path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z" />
+  ),
+  inbox: (
+    <>
+      <path d="M4 13h4l2 3h4l2-3h4" />
+      <path d="M6 5h12l2 8v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5z" />
+    </>
+  ),
+  sparkles: (
+    <>
+      <path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2z" />
+      <path d="m18 14 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M6 9a6 6 0 0 1 12 0v4l2 3H4l2-3z" />
+      <path d="M10 19h4" />
+    </>
+  ),
+  chevronRight: <path d="m9 18 6-6-6-6" />,
+  arrowUpRight: (
+    <>
+      <path d="M7 17 17 7" />
+      <path d="M9 7h8v8" />
+    </>
+  ),
+  file: (
+    <>
+      <path d="M6 3h8l4 4v14H6z" />
+      <path d="M14 3v5h5" />
+    </>
+  ),
+  download: (
+    <>
+      <path d="M12 4v11" />
+      <path d="m8 11 4 4 4-4" />
+      <path d="M5 20h14" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
+  check: <path d="m5 12 4 4L19 6" />,
+  layers: (
+    <>
+      <path d="m12 3 9 5-9 5-9-5z" />
+      <path d="m3 12 9 5 9-5" />
+      <path d="m3 16 9 5 9-5" />
+    </>
+  ),
+  users: (
+    <>
+      <path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 20v-2a4 4 0 0 0-3-3.87" />
+    </>
+  ),
+  filter: <path d="M4 5h16l-6 7v5l-4 2v-7z" />,
+  grid: (
+    <>
+      <rect x="4" y="4" width="6" height="6" rx="1" />
+      <rect x="14" y="4" width="6" height="6" rx="1" />
+      <rect x="4" y="14" width="6" height="6" rx="1" />
+      <rect x="14" y="14" width="6" height="6" rx="1" />
+    </>
+  ),
+  list: (
+    <>
+      <path d="M8 6h12M8 12h12M8 18h12" />
+      <path d="M4 6h.01M4 12h.01M4 18h.01" />
+    </>
+  ),
+  more: (
+    <>
+      <circle cx="5" cy="12" r="1" fill="currentColor" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" />
+      <circle cx="19" cy="12" r="1" fill="currentColor" />
+    </>
+  ),
+  book: (
+    <>
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21z" />
+      <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5A2.5 2.5 0 0 1 20 21z" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6" />
+      <circle cx="12" cy="12" r="2.5" />
+    </>
+  ),
+  refresh: (
+    <>
+      <path d="M20 7v5h-5" />
+      <path d="M4 17v-5h5" />
+      <path d="M6.1 8a7 7 0 0 1 11.4-2L20 8M4 16l2.5 2a7 7 0 0 0 11.4-2" />
+    </>
+  ),
+  shield: (
+    <>
+      <path d="M12 3 5 6v5c0 4.4 2.7 8.2 7 10 4.3-1.8 7-5.6 7-10V6z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
+  edit: (
+    <>
+      <path d="M4 20h4l11-11-4-4L4 16z" />
+      <path d="m13.5 6.5 4 4" />
+    </>
+  ),
+  paperclip: (
+    <path d="m20.5 11.5-8.7 8.7a6 6 0 0 1-8.5-8.5l9-9a4 4 0 1 1 5.7 5.7l-9 9a2 2 0 1 1-2.8-2.8l8.5-8.5" />
+  ),
+  calendar: (
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M8 3v4M16 3v4M3 10h18" />
+    </>
+  ),
+  x: <path d="m6 6 12 12M18 6 6 18" />,
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  chart: (
+    <>
+      <path d="M4 20V10M10 20V4M16 20v-7M22 20V7" />
+    </>
+  ),
+  settings: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.96 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3V10h.08A1.7 1.7 0 0 0 4.6 8.96a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 10 3.03V3h4v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.97 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15z" />
+    </>
+  ),
+  history: (
+    <>
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5M12 7v5l3 2" />
+    </>
+  ),
+  message: (
+    <>
+      <path d="M4 4h16v12H8l-4 4z" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="5" y="10" width="14" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+  warning: (
+    <>
+      <path d="m12 3 10 18H2z" />
+      <path d="M12 9v5M12 18h.01" />
+    </>
+  ),
+  plus: <path d="M12 5v14M5 12h14" />,
+  cloudUpload: (
+    <>
+      <path d="M7 18a4 4 0 0 1-.5-7.97 5.5 5.5 0 0 1 10.6-1.5A3.75 3.75 0 0 1 17.5 18" />
+      <path d="M12 21v-8" />
+      <path d="m9 16 3-3 3 3" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="8.5" cy="10" r="1.5" />
+      <path d="m5 17 4.5-4.5L13 16l2.5-2.5L20 18" />
+    </>
+  ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" />
+    </>
+  ),
+};
+export function Icon({
+  name,
+  className = 'size-5',
+  ...props
+}: { name: IconName } & SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+      {...props}
+    >
+      {p[name]}
+    </svg>
+  );
+}

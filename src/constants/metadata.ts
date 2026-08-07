@@ -18,7 +18,6 @@ export const REQUIRED_METADATA_FIELDS = [
   'subject',
   'gradeLevel',
   'learningObjectives',
-  'mediaType',
 ] as const;
 
 export type RequiredMetadataField = (typeof REQUIRED_METADATA_FIELDS)[number];
@@ -37,7 +36,6 @@ export const METADATA_FIELD_LABELS: Record<MetadataField, string> = {
   subject: 'วิชา',
   gradeLevel: 'ระดับชั้น',
   learningObjectives: 'จุดประสงค์การเรียนรู้',
-  mediaType: 'ประเภทสื่อ',
   license: 'สัญญาอนุญาต',
   tags: 'แท็ก',
 };
