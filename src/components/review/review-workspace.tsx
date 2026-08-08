@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Icon } from '@/components/ui/icons';
 import { Pill, SectionCard } from '@/components/ui/enterprise';
+import { AiReviewChat } from '@/components/review/ai-review-chat';
 import type { ReviewJob } from '@/constants/enterprise-data';
 import { REVIEW_TOPICS } from '@/constants/review-topics';
 import {
@@ -56,7 +57,6 @@ export function ReviewWorkspace({ job, role }: { job: ReviewJob; role: UserRole 
             <Pill>
               {isAcademic ? 'ตรวจขั้นสุดท้ายโดยหัวหน้าวิชาการ' : `รอบกลุ่มสาระ: ${job.department}`}
             </Pill>
-            <Pill tone="warn">v{job.version}</Pill>
           </div>
           <h1 className="mt-3 text-2xl font-bold tracking-[-.035em]">{job.title}</h1>
           <p className="mt-2 text-sm text-ink-faint">
@@ -72,7 +72,7 @@ export function ReviewWorkspace({ job, role }: { job: ReviewJob; role: UserRole 
         </button>
       </div>
 
-      <div className="grid gap-6 2xl:grid-cols-[1.05fr_1.15fr_.8fr]">
+      <div className="grid items-start gap-6 2xl:grid-cols-[1.05fr_1.15fr_.8fr]">
         <SectionCard title="ตัวอย่างไฟล์" description="ไฟล์ private · เปิดผ่าน signed URL เท่านั้น">
           <div className="grid min-h-[520px] place-items-center rounded-xl border border-dashed border-line bg-surface">
             <div className="text-center">
@@ -152,27 +152,13 @@ export function ReviewWorkspace({ job, role }: { job: ReviewJob; role: UserRole 
         </SectionCard>
 
         <div className="space-y-6">
-          {isAcademic && (
-            <SectionCard title="ผลจากหัวหน้ากลุ่มสาระ" description="อ่านผลรอบแรกก่อนตัดสินขั้นสุดท้าย">
-              <div className="space-y-2 text-xs text-ink-muted">
-                <p>✓ ตรวจครบทุกหัวข้อและไม่พบจุดที่ต้องแก้</p>
-                <p>• ระบุแหล่งที่มาของภาพประกอบแล้ว</p>
-                <p>• เสนอให้ปรับขนาดตัวอักษรหน้า 12 เพื่อให้อ่านง่ายขึ้น</p>
-              </div>
-            </SectionCard>
-          )}
-
-          <SectionCard title="ผู้ช่วย Typhoon" description="AI ช่วยสรุปและชี้จุด แต่ไม่มีสิทธิ์ตัดสิน">
-            <div className="rounded-xl border border-status-pending/20 bg-status-pending/5 p-4">
-              <div className="flex items-center gap-2 text-status-pending">
-                <Icon name="warning" className="size-4" />
-                <p className="text-xs font-bold">พบ 1 จุดควรตรวจ</p>
-              </div>
-              <p className="mt-2 text-[11px] leading-5 text-ink-muted">
-                หัวข้อสื่อประกอบมีภาพในหน้า 18 ที่ควรยืนยันแหล่งที่มาและสิทธิ์การนำไปใช้
-              </p>
-            </div>
-          </SectionCard>
+          <AiReviewChat
+            job={job}
+            role={role}
+            results={results}
+            comments={comments}
+            summary={summary}
+          />
 
           <SectionCard title="สรุปและตัดสิน">
             <textarea

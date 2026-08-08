@@ -17,8 +17,8 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
   const avatarLabel = role === 'TEACHER' ? 'อจ' : role === 'REVIEWER' ? 'ผต' : 'AD';
 
   const sidebar = (
-    <div className="flex h-full flex-col px-4 py-5">
-      <Link href="/" className="group flex items-center gap-3 rounded-xl px-2 py-1.5">
+    <div className="flex h-full min-h-0 flex-col px-4 py-4">
+      <Link href="/" className="group flex shrink-0 items-center gap-3 rounded-xl px-2 py-1.5">
         <span className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-brand to-brand-strong text-brand-contrast shadow-lg shadow-brand/15">
           <Icon name="sparkles" className="size-5" />
         </span>
@@ -32,17 +32,17 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
         <Link
           href={PRIMARY_ACTION.href}
           onClick={() => setMobileOpen(false)}
-          className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-brand-contrast shadow-lg shadow-brand/15 transition-all hover:-translate-y-0.5 hover:bg-brand-strong hover:shadow-xl"
+          className="mt-5 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-brand-contrast shadow-lg shadow-brand/15 transition-all hover:-translate-y-0.5 hover:bg-brand-strong hover:shadow-xl"
         >
           <Icon name="upload" className="size-4" />
           {PRIMARY_ACTION.label}
         </Link>
       )}
 
-      <div className="mt-7 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
+      <div className="mt-5 shrink-0 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
         เมนูหลัก
       </div>
-      <nav className="mt-2 flex flex-col gap-1">
+      <nav className="mt-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-1">
         {items.map((item) => {
           const active =
             item.href === '/'
@@ -53,7 +53,7 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
               key={item.href}
               href={item.href}
               onClick={() => setMobileOpen(false)}
-              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${active ? 'bg-brand/10 text-brand' : 'text-ink-muted hover:bg-panel hover:text-ink'}`}
+              className={`group flex shrink-0 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all ${active ? 'bg-brand/10 text-brand' : 'text-ink-muted hover:bg-panel hover:text-ink'}`}
             >
               <span
                 className={`grid size-8 place-items-center rounded-lg transition ${active ? 'bg-brand/10' : 'group-hover:bg-surface'}`}
@@ -67,14 +67,14 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
         })}
       </nav>
 
-      <div className="mt-auto space-y-2 border-t border-line/80 pt-4">
+      <div className="mt-3 shrink-0 space-y-1.5 border-t border-line/80 pt-3">
         <ThemeToggle />
         <LogoutButton onDone={() => setMobileOpen(false)} />
         <Link
           href="/profile"
           onClick={() => setMobileOpen(false)}
           aria-label="เปิดข้อมูลของฉัน"
-          className={`group flex items-center gap-3 rounded-xl border p-2.5 transition-colors ${
+          className={`group flex items-center gap-3 rounded-xl border p-2 transition-colors ${
             pathname === '/profile'
               ? 'border-brand/20 bg-brand/8'
               : 'border-transparent bg-panel/70 hover:border-line hover:bg-panel'

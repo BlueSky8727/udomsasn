@@ -17,12 +17,22 @@ export function LogoutButton({ onDone }: { onDone?: () => void }) {
   const [busy, setBusy] = useState(false);
 
   const handleClick = async () => {
+    if (busy) return;
+
     setBusy(true);
-    await signOut();
-    onDone?.();
-    // refresh ก่อน push เพื่อทิ้ง cache ของ server component ที่เรนเดอร์ไว้ตอนยังมี session
-    router.refresh();
-    router.push('/login');
+    try {
+      await signOut();
+      onDone?.();
+      // เปลี่ยนหน้าภายในแอปเพื่อให้ JavaScript ที่โหลดอยู่ทำงานต่อเนื่อง
+      // และใช้ hard navigation เป็นทางสำรองเฉพาะเมื่อ router เปลี่ยนหน้าไม่สำเร็จ
+      router.replace('/login');
+      window.setTimeout(() => {
+        if (window.location.pathname !== '/login') window.location.replace('/login');
+      }, 1_000);
+    } catch (error) {
+      console.error('Unable to sign out', error);
+      setBusy(false);
+    }
   };
 
   return (

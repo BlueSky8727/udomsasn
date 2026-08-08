@@ -5,14 +5,16 @@ export function Metric({
   value,
   detail,
   icon,
+  className = '',
 }: {
   label: string;
   value: string;
   detail: string;
   icon: IconName;
+  className?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-line/80 bg-panel p-5 shadow-sm">
+    <div className={`rounded-2xl border border-line/80 bg-panel p-5 shadow-sm ${className}`}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-ink-faint">{label}</p>

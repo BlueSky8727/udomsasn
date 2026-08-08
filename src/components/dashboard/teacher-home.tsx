@@ -78,25 +78,42 @@ export function TeacherHome({ name, media }: { name: string; media: readonly Dem
       </section>
 
       <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="ฉบับร่าง" value={String(drafts.length)} detail="เก็บไว้แก้ไขก่อนส่งตรวจ" icon="edit" />
-        <Metric
-          label="อยู่ระหว่างตรวจ"
-          value={String(underReview.length)}
-          detail="กำลังอยู่ที่กลุ่มสาระหรือฝ่ายวิชาการ"
-          icon="clock"
-        />
-        <Metric
-          label="ผลจากกลุ่มสาระ"
-          value={String(subjectFeedback.length)}
-          detail="รายการให้แก้ไขหรือไม่ผ่าน"
-          icon="message"
-        />
-        <Metric
-          label="ผ่านจากฝ่ายวิชาการ"
-          value={String(academicApprovals.length)}
-          detail="อนุมัติขั้นสุดท้ายและเข้าคลังแล้ว"
-          icon="check"
-        />
+        <Link href="/my-media?view=drafts#media-list" aria-label="ดูรายการฉบับร่าง" className="group block rounded-2xl">
+          <Metric
+            label="ฉบับร่าง"
+            value={String(drafts.length)}
+            detail="เก็บไว้แก้ไขก่อนส่งตรวจ"
+            icon="edit"
+            className="h-full transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand/35 group-hover:shadow-md"
+          />
+        </Link>
+        <Link href="/my-media?view=reviewing#media-list" aria-label="ดูรายการที่อยู่ระหว่างตรวจ" className="group block rounded-2xl">
+          <Metric
+            label="อยู่ระหว่างตรวจ"
+            value={String(underReview.length)}
+            detail="กำลังอยู่ที่กลุ่มสาระหรือฝ่ายวิชาการ"
+            icon="clock"
+            className="h-full transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand/35 group-hover:shadow-md"
+          />
+        </Link>
+        <Link href="/my-media?view=subject-feedback#media-list" aria-label="ดูรายการผลจากกลุ่มสาระ" className="group block rounded-2xl">
+          <Metric
+            label="ผลจากกลุ่มสาระ"
+            value={String(subjectFeedback.length)}
+            detail="รายการให้แก้ไขหรือไม่ผ่าน"
+            icon="message"
+            className="h-full transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand/35 group-hover:shadow-md"
+          />
+        </Link>
+        <Link href="/my-media?view=academic-approved#media-list" aria-label="ดูรายการที่ผ่านจากฝ่ายวิชาการ" className="group block rounded-2xl">
+          <Metric
+            label="ผ่านจากฝ่ายวิชาการ"
+            value={String(academicApprovals.length)}
+            detail="อนุมัติขั้นสุดท้ายและเข้าคลังแล้ว"
+            icon="check"
+            className="h-full transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand/35 group-hover:shadow-md"
+          />
+        </Link>
       </section>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_.95fr]">

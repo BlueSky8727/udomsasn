@@ -145,6 +145,7 @@ export function LoginForm() {
             id="email"
             name="email"
             type="email"
+            required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"
@@ -188,6 +189,7 @@ export function LoginForm() {
               id="password"
               name="password"
               type={showPassword ? 'text' : 'password'}
+              required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="current-password"
