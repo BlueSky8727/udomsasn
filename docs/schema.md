@@ -9,7 +9,7 @@ Supabase (PostgreSQL) — **เปิด RLS ทุกตาราง** ไม�
 profiles ──┬── media ──┬── media_versions ──┬── media_files
            │           │                    ├── comments
            │           │                    └── ai_reviews
-           │           ├── reviews ── review_items
+           │           ├── reviews
            │           └── status_logs
            └── (actor ของ reviews / comments / status_logs)
 ```
@@ -23,12 +23,11 @@ profiles ──┬── media ──┬── media_versions ──┬── me
 ## ชนิดข้อมูล (enum)
 
 ```sql
-create type user_role   as enum ('TEACHER', 'REVIEWER', 'ADMIN', 'VIEWER');
-create type media_status as enum ('DRAFT', 'PENDING', 'IN_REVIEW', 'REVISION',
-                                  'APPROVED', 'REJECTED', 'ARCHIVED');
-create type review_decision as enum ('APPROVED', 'REVISION', 'REJECTED');
-create type rubric_code as enum ('R1','R2','R3','R4','R5','R6','R7','R8','R9');
-create type rubric_result as enum ('PASS', 'FAIL', 'NA');
+create type user_role   as enum ('TEACHER', 'REVIEWER', 'ADMIN');
+create type media_status as enum ('DRAFT', 'PENDING', 'IN_REVIEW', 'ACADEMIC_REVIEW',
+                                  'REVISION', 'ACADEMIC_REVISION', 'APPROVED',
+                                  'REJECTED', 'ARCHIVED');
+create type review_stage as enum ('SUBJECT_GROUP', 'ACADEMIC');
 ```
 
 ค่าใน enum ต้องตรงกับ `MEDIA_STATUS` / `USER_ROLE` ใน [src/constants/workflow.ts](../src/constants/workflow.ts) เสมอ
@@ -46,6 +45,7 @@ create type rubric_result as enum ('PASS', 'FAIL', 'NA');
 | `email` | text | |
 | `full_name` | text | |
 | `role` | user_role | ค่าเริ่มต้น `TEACHER` |
+| `department_id` | uuid FK → departments | กลุ่มสาระที่สังกัด/รับผิดชอบ |
 | `school` | text | หน่วยงาน/โรงเรียน |
 | `is_active` | boolean | ปิดการใช้งานโดยไม่ต้องลบ |
 | `created_at` `updated_at` | timestamptz | |
@@ -59,14 +59,15 @@ create type rubric_result as enum ('PASS', 'FAIL', 'NA');
 |---|---|---|
 | `id` | uuid PK | |
 | `owner_id` | uuid FK → profiles | เจ้าของ ใช้ตัดสิน `ownerOnly` |
-| `title` | text | R1 |
-| `description` | text | R1 |
-| `subject` | text | วิชา R1 |
-| `grade_level` | text | ระดับชั้น R1/R4 |
-| `learning_objectives` | text | จุดประสงค์ R1/R2 |
+| `department_id` | uuid FK → departments | กลุ่มสาระปลายทาง ใช้จำกัดคิวและ RLS |
+| `title` | text | ชื่อสื่อ |
+| `description` | text | สาระการเรียนรู้ |
+| `subject` | text | วิชา |
+| `grade_level` | text | ระดับชั้น |
+| `learning_objectives` | text | จุดประสงค์การเรียนรู้ |
 | `media_type` | text | ประเภทสื่อ ไม่บังคับ ฟอร์มปัจจุบันยังไม่เก็บค่านี้ |
 | `tags` | text[] | ใช้ค้นหา |
-| `license` | text | R6 |
+| `license` | text | เงื่อนไขการนำไปใช้ต่อ |
 | `status` | media_status | ค่าเริ่มต้น `DRAFT` |
 | `current_version_id` | uuid FK → media_versions | version ล่าสุด |
 | `published_at` | timestamptz | ตอนเข้า `APPROVED` ครั้งแรก |
@@ -114,7 +115,9 @@ unique `(media_id, version_no)`
 | `media_id` | uuid FK → media | |
 | `version_id` | uuid FK → media_versions | ตรวจ version ไหน |
 | `reviewer_id` | uuid FK → profiles | ผู้ถือเรื่อง ใช้ตัดสิน `assigneeOnly` |
-| `decision` | review_decision | null ระหว่างที่ยังตรวจอยู่ |
+| `stage` | review_stage | รอบกลุ่มสาระหรือรอบหัวหน้าวิชาการ |
+| `decision` | media_status | null ระหว่างที่ยังตรวจอยู่ |
+| `topic_results` | jsonb | ผลตรวจแยกตามหัวข้อภาษาคน |
 | `summary` | text | สรุปของผู้ตรวจ |
 | `started_at` | timestamptz | ตอนรับเรื่อง |
 | `closed_at` | timestamptz | null = ยังถืออยู่ |
@@ -128,20 +131,6 @@ create unique index reviews_one_active_per_media
 
 การเช็ค `requiresUnassigned` ในโค้ดเป็นด่านแรก index นี้เป็นด่านสุดท้ายที่กัน race condition จริง
 
-### `review_items`
-ผลรายเกณฑ์ R1–R9 ของผู้ตรวจที่เป็นคน
-
-| คอลัมน์ | ชนิด | หมายเหตุ |
-|---|---|---|
-| `id` | uuid PK | |
-| `review_id` | uuid FK → reviews | |
-| `rubric_code` | rubric_code | R1–R9 |
-| `result` | rubric_result | |
-| `note` | text | |
-| `created_at` | timestamptz | |
-
-unique `(review_id, rubric_code)`
-
 ### `comments`
 คอมเมนต์ผูกกับ **version** (กฎเหล็กข้อ 4)
 
@@ -150,7 +139,7 @@ unique `(review_id, rubric_code)`
 | `id` | uuid PK | |
 | `version_id` | uuid FK → media_versions | |
 | `author_id` | uuid FK → profiles | |
-| `rubric_code` | rubric_code | null ได้ ถ้าเป็นคอมเมนต์ทั่วไป |
+| `topic_key` | text | null ได้ ถ้าเป็นคอมเมนต์ทั่วไป |
 | `body` | text | |
 | `created_at` | timestamptz | |
 
@@ -165,7 +154,7 @@ unique `(review_id, rubric_code)`
 | `id` | uuid PK | |
 | `version_id` | uuid FK → media_versions | |
 | `model` | text | ชื่อรุ่นที่ใช้ |
-| `findings` | jsonb | ธงรายข้อ R1–R9 พร้อมข้อความอ้างอิง |
+| `findings` | jsonb | ข้อสังเกตแยกตามหัวข้อ พร้อมข้อความอ้างอิง |
 | `prompt_injection_detected` | boolean | พบข้อความที่พยายามสั่ง AI ในไฟล์ (กฎเหล็กข้อ 7) |
 | `created_at` | timestamptz | |
 
@@ -196,10 +185,10 @@ AI ต้องไม่มีสิทธิ์เขียนตาราง�
 
 | ตาราง | อ่าน | เขียน |
 |---|---|---|
-| `profiles` | ตัวเอง + reviewer/admin อ่านได้ทั้งหมด | ตัวเองแก้ได้ยกเว้น `role` / admin แก้ได้ทุกอย่าง |
-| `media` | เจ้าของ / reviewer / admin ทั้งหมด, คนอื่นเห็นเฉพาะ `APPROVED` | insert: เจ้าของ, update สถานะ: ผ่านชั้น server เท่านั้น |
+| `profiles` | ตัวเอง / admin ทั้งหมด / reviewer เฉพาะกลุ่มเดียวกัน | `role` และ `department_id` เปลี่ยนได้โดย admin เท่านั้น |
+| `media` | เจ้าของ / admin ทั้งหมด / reviewer เฉพาะ `department_id` ของตน, คนอื่นเห็นเฉพาะ `APPROVED` | insert: เจ้าของ, update สถานะ: ผ่านชั้น server เท่านั้น |
 | `media_versions` `media_files` | ตามสิทธิ์ของ `media` ที่ผูกอยู่ | เจ้าของ insert ได้ตอน `DRAFT`/`REVISION`, ห้าม update/delete |
-| `reviews` `review_items` | เจ้าของอ่านได้ (เห็นผลตรวจของตัวเอง), reviewer/admin ทั้งหมด | reviewer/admin เท่านั้น |
+| `reviews` | เจ้าของอ่านได้, reviewer เฉพาะงานกลุ่มตน, admin เฉพาะงานที่มีสิทธิ์ตรวจ | reviewer ต้องเป็นผู้ถือเรื่องในกลุ่มตน / admin ตรวจรอบวิชาการ |
 | `comments` | เจ้าของ + reviewer/admin | reviewer/admin เขียนได้, เจ้าของตอบกลับได้ |
 | `ai_reviews` | reviewer/admin (+ เจ้าของ ถ้าจะให้เห็น) | service role เท่านั้น |
 | `status_logs` | เจ้าของ (ของตัวเอง) + reviewer/admin | insert เท่านั้น ไม่มี update/delete |

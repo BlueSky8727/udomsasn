@@ -26,9 +26,13 @@ type QueueFilter = {
 /** กรองตามสถานะของงานอย่างเดียว คิวนี้ตอบคำถามว่า "ตอนนี้ต้องทำอะไรต่อ" */
 const FILTERS: readonly QueueFilter[] = [
   { id: 'all', label: 'ทั้งหมด', match: () => true },
-  { id: 'pending', label: 'รอรับเรื่อง', match: (job) => job.status === MEDIA_STATUS.PENDING },
-  { id: 'in-review', label: 'กำลังตรวจ', match: (job) => job.status === MEDIA_STATUS.IN_REVIEW },
-  { id: 'revision', label: 'ให้แก้ไข', match: (job) => job.status === MEDIA_STATUS.REVISION },
+  {
+    id: 'sent-revision',
+    label: 'ส่งแก้',
+    match: (job) =>
+      job.status === MEDIA_STATUS.REVISION ||
+      job.status === MEDIA_STATUS.ACADEMIC_REVISION,
+  },
 ];
 
 const FALLBACK_FILTER = FILTERS[0]!;

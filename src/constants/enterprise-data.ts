@@ -5,6 +5,7 @@ export type ReviewJob = {
   title: string;
   owner: string;
   subject: string;
+  department: string;
   grade: string;
   version: number;
   status: MediaStatus;
@@ -14,10 +15,23 @@ export type ReviewJob = {
 };
 export const REVIEW_JOBS: ReviewJob[] = [
   {
+    id: 'MED-260807-015',
+    title: 'ระบบนิเวศและสายใยอาหาร',
+    owner: 'อ.ชลธิชา แก้วใส',
+    subject: 'วิทยาศาสตร์',
+    department: 'วิทยาศาสตร์และเทคโนโลยี',
+    grade: 'ม.2',
+    version: 1,
+    status: 'PENDING',
+    age: '9 นาที',
+    aiRisk: 'กลาง',
+  },
+  {
     id: 'MED-260807-014',
     title: 'วงจรไฟฟ้ากระแสตรง: ชุดกิจกรรมทดลอง',
     owner: 'อ.นภัสสร สุขใจ',
     subject: 'วิทยาศาสตร์',
+    department: 'วิทยาศาสตร์และเทคโนโลยี',
     grade: 'ม.3',
     version: 2,
     status: 'IN_REVIEW',
@@ -30,6 +44,7 @@ export const REVIEW_JOBS: ReviewJob[] = [
     title: 'การอ่านจับใจความจากข่าวร่วมสมัย',
     owner: 'อ.วรรณา แสงทอง',
     subject: 'ภาษาไทย',
+    department: 'ภาษาไทย',
     grade: 'ม.2',
     version: 1,
     status: 'PENDING',
@@ -41,6 +56,7 @@ export const REVIEW_JOBS: ReviewJob[] = [
     title: 'Worksheet: Linear Equation',
     owner: 'อ.ธนวัฒน์ มณี',
     subject: 'คณิตศาสตร์',
+    department: 'คณิตศาสตร์',
     grade: 'ม.1',
     version: 3,
     status: 'REVISION',
@@ -52,23 +68,37 @@ export const REVIEW_JOBS: ReviewJob[] = [
     title: 'ภูมิอากาศเอเชียตะวันออกเฉียงใต้',
     owner: 'อ.ปภาวดี ใจดี',
     subject: 'สังคมศึกษา',
+    department: 'สังคมศึกษา ศาสนา และวัฒนธรรม',
     grade: 'ม.2',
     version: 1,
     status: 'PENDING',
     age: '3 ชม.',
     aiRisk: 'ต่ำ',
   },
+  {
+    id: 'MED-260807-010',
+    title: 'การสังเคราะห์ด้วยแสง',
+    owner: 'อ.สุเมธ พัฒนศิลป์',
+    subject: 'วิทยาศาสตร์',
+    department: 'วิทยาศาสตร์และเทคโนโลยี',
+    grade: 'ม.1',
+    version: 2,
+    status: 'ACADEMIC_REVIEW',
+    age: '26 นาที',
+    aiRisk: 'ต่ำ',
+    assignee: 'หัวหน้าวิชาการ',
+  },
 ];
 export const TIMELINE = [
   {
     time: '09:05',
     title: 'อนุมัติสื่อ MED-260807-010',
-    detail: 'อ.กิตติชัย · ผ่าน R1–R9 และเผยแพร่เข้าคลัง',
+    detail: 'อ.กิตติชัย · ตรวจครบและเผยแพร่เข้าคลัง',
   },
   {
     time: '08:47',
     title: 'Typhoon คัดกรองเสร็จ',
-    detail: 'MED-260807-014 · พบ 1 จุดที่ควรตรวจ R6',
+    detail: 'MED-260807-014 · พบ 1 จุดที่ควรตรวจเรื่องแหล่งที่มา',
   },
   {
     time: '08:31',

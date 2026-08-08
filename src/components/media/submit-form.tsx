@@ -10,11 +10,17 @@ import {
   GRADE_LEVELS,
   LEARNING_DOMAINS,
   MAX_OBJECTIVES_PER_DOMAIN,
-  SUBJECTS,
+  SUBJECT_GROUPS,
   type LearningDomainCode,
 } from '@/constants/media-options';
 import { METADATA_FIELD_LABELS, MIN_LENGTH, missingMetadataFields } from '@/constants/metadata';
-import { checkTransition, getTransition, MEDIA_STATUS, USER_ROLE } from '@/constants/workflow';
+import {
+  checkTransition,
+  getTransition,
+  MEDIA_STATUS,
+  USER_ROLE,
+  type MediaStatus,
+} from '@/constants/workflow';
 
 /* ------------------------------------------------------------------ */
 /* รูปร่างข้อมูลในฟอร์ม                                                  */
@@ -45,6 +51,14 @@ type FormState = {
    */
   submitterName: string;
   objectives: Record<LearningDomainCode, ObjectiveRow[]>;
+};
+
+export type SubmitFormInitialMedia = {
+  id: string;
+  title: string;
+  subject: string;
+  grade: string;
+  status: MediaStatus;
 };
 
 const EMPTY_ASSESSMENT: Assessment = { indicator: '', criteria: '', passing: '' };
@@ -133,8 +147,18 @@ function DomainBadge({ code }: { code: LearningDomainCode }) {
 /* ฟอร์ม                                                               */
 /* ------------------------------------------------------------------ */
 
-export function SubmitForm() {
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+export function SubmitForm({ initialMedia }: { initialMedia?: SubmitFormInitialMedia }) {
+  const [form, setForm] = useState<FormState>(() => ({
+    ...EMPTY_FORM,
+    title: initialMedia?.title ?? '',
+    subject: initialMedia?.subject ?? '',
+    gradeLevel: initialMedia?.grade ?? '',
+    objectives: {
+      K: [{ id: 'obj-K', text: '', assessment: { ...EMPTY_ASSESSMENT } }],
+      P: [{ id: 'obj-P', text: '', assessment: { ...EMPTY_ASSESSMENT } }],
+      A: [{ id: 'obj-A', text: '', assessment: { ...EMPTY_ASSESSMENT } }],
+    },
+  }));
   const [files, setFiles] = useState<File[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -196,19 +220,35 @@ export function SubmitForm() {
 
   const missing = missingMetadataFields(metadata);
 
+  const fromStatus = initialMedia?.status ?? MEDIA_STATUS.DRAFT;
+  const toStatus =
+    fromStatus === MEDIA_STATUS.ACADEMIC_REVISION
+      ? MEDIA_STATUS.ACADEMIC_REVIEW
+      : MEDIA_STATUS.PENDING;
+
   // ปุ่มส่งตรวจยังต้องผ่านตารางเส้นทางเดียวกับฝั่งเซิร์ฟเวอร์เสมอ
-  const submitCheck = checkTransition(MEDIA_STATUS.DRAFT, MEDIA_STATUS.PENDING, {
+  const submitCheck = checkTransition(fromStatus, toStatus, {
     actorRole: USER_ROLE.TEACHER,
     actorId: 'preview-user',
     ownerId: 'preview-user',
     hasCompleteMetadata: missing.length === 0,
     fileCount: files.length,
   });
-  const submitRule = getTransition(MEDIA_STATUS.DRAFT, MEDIA_STATUS.PENDING);
+  const submitRule = getTransition(fromStatus, toStatus);
 
   return (
     <form onSubmit={(e) => e.preventDefault()}>
-      <h1 className="mb-4 text-lg font-bold tracking-[-.02em]">ข้อมูลประกอบ</h1>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <h1 className="text-lg font-bold tracking-[-.02em]">
+          {initialMedia
+            ? initialMedia.status === MEDIA_STATUS.REVISION ||
+              initialMedia.status === MEDIA_STATUS.ACADEMIC_REVISION
+              ? 'แก้ไขสื่อตามข้อเสนอแนะ'
+              : 'แก้ไขฉบับร่าง'
+            : 'ข้อมูลประกอบ'}
+        </h1>
+        {initialMedia && <Pill tone="neutral">{initialMedia.id}</Pill>}
+      </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         {/* ---------------- คอลัมน์ซ้าย ---------------- */}
@@ -226,17 +266,24 @@ export function SubmitForm() {
               </label>
 
               <label className="block">
-                <Label required>วิชา</Label>
+                <Label required>ส่งตรวจไปยังกลุ่มสาระ</Label>
                 <select
                   className={inputClass}
                   value={form.subject}
                   onChange={(e) => set('subject', e.target.value)}
                 >
-                  <option value="">เลือกวิชา</option>
-                  {SUBJECTS.map((x) => (
-                    <option key={x}>{x}</option>
+                  <option value="">เลือกกลุ่มสาระปลายทาง</option>
+                  {SUBJECT_GROUPS.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.subjects.map((subject) => (
+                        <option key={subject}>{subject}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
+                <span className="mt-1.5 block text-[11px] leading-5 text-ink-faint">
+                  ระบบจะส่งให้หัวหน้ากลุ่มสาระนี้เป็นผู้ตรวจรอบแรก
+                </span>
               </label>
 
               <label className="block">
@@ -346,13 +393,13 @@ export function SubmitForm() {
 
           <Card>
             <label className="block">
-              <Label required>คำอธิบายสื่อ</Label>
+              <Label required>สาระการเรียนรู้</Label>
               <textarea
                 rows={4}
                 className={`${inputClass} resize-y`}
                 value={form.description}
                 onChange={(e) => set('description', e.target.value)}
-                placeholder={`อธิบายเนื้อหา วิธีใช้ และสิ่งที่ผู้ใช้สื่อนี้ควรรู้ อย่างน้อย ${MIN_LENGTH.description} ตัวอักษร`}
+                placeholder={`ระบุเนื้อหา สาระสำคัญ และประเด็นที่ผู้เรียนควรรู้ อย่างน้อย ${MIN_LENGTH.description} ตัวอักษร`}
               />
             </label>
 
@@ -371,6 +418,40 @@ export function SubmitForm() {
 
         {/* ---------------- คอลัมน์ขวา ---------------- */}
         <aside className="space-y-5">
+          <Card title="เส้นทางการส่งตรวจ">
+            <div className="space-y-3">
+              {[
+                {
+                  number: '1',
+                  title: 'อาจารย์สร้างและส่งสื่อ',
+                  detail: form.subject
+                    ? `ส่งไปยังกลุ่มสาระ${form.subject}`
+                    : 'กรุณาเลือกกลุ่มสาระปลายทาง',
+                },
+                {
+                  number: '2',
+                  title: 'หัวหน้ากลุ่มสาระตรวจรอบแรก',
+                  detail: 'ถ้าต้องแก้ไขหรือไม่ผ่าน จะส่งเหตุผลกลับมาที่อาจารย์',
+                },
+                {
+                  number: '3',
+                  title: 'หัวหน้าวิชาการอนุมัติ',
+                  detail: 'เมื่อผ่านขั้นสุดท้าย ระบบจะแจ้งผลและเผยแพร่เข้าคลัง',
+                },
+              ].map((step) => (
+                <div key={step.number} className="flex gap-3">
+                  <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-brand/10 text-xs font-bold text-brand">
+                    {step.number}
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold text-ink">{step.title}</p>
+                    <p className="mt-1 text-[11px] leading-5 text-ink-faint">{step.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
           <Card>
             <Pill>Typhoon</Pill>
             <p className="mt-3 text-xs leading-6 text-ink-muted">
@@ -392,7 +473,7 @@ export function SubmitForm() {
               title={submitCheck.ok ? submitRule?.description : submitCheck.message}
               onClick={() =>
                 setNotice(
-                  `ข้อมูลครบตามเงื่อนไขแล้ว (${files.length} ไฟล์) แต่โหมดพรีวิวยังไม่เชื่อมฐานข้อมูล`,
+                  `พร้อมส่งให้หัวหน้ากลุ่มสาระ${form.subject} (${files.length} ไฟล์) แต่โหมดพรีวิวยังไม่เชื่อมฐานข้อมูล`,
                 )
               }
               className="mt-2 w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-brand-contrast transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-45"

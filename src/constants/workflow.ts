@@ -16,7 +16,9 @@ export const MEDIA_STATUS = {
   DRAFT: 'DRAFT',
   PENDING: 'PENDING',
   IN_REVIEW: 'IN_REVIEW',
+  ACADEMIC_REVIEW: 'ACADEMIC_REVIEW',
   REVISION: 'REVISION',
+  ACADEMIC_REVISION: 'ACADEMIC_REVISION',
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
   ARCHIVED: 'ARCHIVED',
@@ -29,9 +31,11 @@ export const MEDIA_STATUS_LIST = Object.values(MEDIA_STATUS) as readonly MediaSt
 /** ข้อความสถานะสำหรับแสดงบนหน้าจอ (กฎเหล็กข้อ 9: UI เป็นภาษาไทย) */
 export const STATUS_LABELS: Record<MediaStatus, string> = {
   DRAFT: 'ร่าง',
-  PENDING: 'รอตรวจ',
-  IN_REVIEW: 'กำลังตรวจ',
+  PENDING: 'รอตรวจโดยกลุ่มสาระ',
+  IN_REVIEW: 'กลุ่มสาระกำลังตรวจ',
+  ACADEMIC_REVIEW: 'รอตรวจโดยหัวหน้าวิชาการ',
   REVISION: 'ให้แก้ไข',
+  ACADEMIC_REVISION: 'แก้ไขเล็กน้อย',
   APPROVED: 'เผยแพร่แล้ว',
   REJECTED: 'ไม่ผ่าน',
   ARCHIVED: 'ถอดออกจากคลัง',
@@ -39,21 +43,24 @@ export const STATUS_LABELS: Record<MediaStatus, string> = {
 
 export const STATUS_DESCRIPTIONS: Record<MediaStatus, string> = {
   DRAFT: 'เจ้าของยังแก้ไขได้ ยังไม่เข้าสู่กระบวนการตรวจ',
-  PENDING: 'อยู่ในคิวรอผู้ตรวจรับเรื่อง',
-  IN_REVIEW: 'มีผู้ตรวจถือเรื่องอยู่',
-  REVISION: 'ผู้ตรวจขอให้แก้ไขแล้วส่งกลับมาใหม่',
-  APPROVED: 'อยู่ในคลัง ค้นหาและดาวน์โหลดได้',
-  REJECTED: 'ไม่ผ่านการตรวจ ไม่เข้าคลัง',
+  PENDING: 'อยู่ในคิวรอหัวหน้ากลุ่มสาระรับเรื่อง',
+  IN_REVIEW: 'หัวหน้ากลุ่มสาระกำลังตรวจและให้ความเห็นรายหัวข้อ',
+  ACADEMIC_REVIEW: 'ผ่านหัวหน้ากลุ่มสาระแล้ว กำลังรอหัวหน้าวิชาการตรวจขั้นสุดท้าย',
+  REVISION: 'หัวหน้ากลุ่มสาระระบุจุดที่ต้องแก้ไขและส่งกลับมาแล้ว',
+  ACADEMIC_REVISION: 'หัวหน้าวิชาการส่งกลับให้แก้ไขจุดเล็กน้อยก่อนตรวจขั้นสุดท้ายอีกครั้ง',
+  APPROVED: 'หัวหน้าวิชาการอนุมัติและส่งผลกลับให้อาจารย์แล้ว อยู่ในคลังและดาวน์โหลดได้',
+  REJECTED: 'หัวหน้ากลุ่มสาระตัดสินว่าไม่ผ่านและระบุเหตุผลแล้ว',
   ARCHIVED: 'เคยเผยแพร่แล้วแต่ถูกถอดออกจากคลัง',
 };
 
-/** สถานะที่ผู้ใช้ทั่วไป (VIEWER) เห็นได้ — กฎเหล็กข้อ 6 ยังคุมเรื่องไฟล์แยกต่างหาก */
+/** สถานะที่คนที่ไม่ใช่เจ้าของและไม่ใช่ผู้ตรวจเห็นได้ — กฎเหล็กข้อ 6 ยังคุมเรื่องไฟล์แยกต่างหาก */
 export const PUBLIC_STATUSES: readonly MediaStatus[] = [MEDIA_STATUS.APPROVED];
 
 /** สถานะที่เจ้าของยังแก้เนื้อหาเดิมได้โดยตรง */
 export const EDITABLE_BY_OWNER_STATUSES: readonly MediaStatus[] = [
   MEDIA_STATUS.DRAFT,
   MEDIA_STATUS.REVISION,
+  MEDIA_STATUS.ACADEMIC_REVISION,
 ];
 
 /** กฎเหล็กข้อ 5: ลบถาวรได้เฉพาะ DRAFT เท่านั้น */
@@ -67,27 +74,30 @@ export const USER_ROLE = {
   TEACHER: 'TEACHER',
   REVIEWER: 'REVIEWER',
   ADMIN: 'ADMIN',
-  VIEWER: 'VIEWER',
 } as const;
 
 export type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   TEACHER: 'อาจารย์',
-  REVIEWER: 'ผู้ตรวจ',
-  ADMIN: 'ผู้ดูแลระบบ',
-  VIEWER: 'ผู้ใช้ทั่วไป',
+  REVIEWER: 'หัวหน้ากลุ่มสาระ',
+  ADMIN: 'หัวหน้าวิชาการ',
 };
 
-/** บทบาทที่เป็นเจ้าของสื่อได้ (VIEWER อัปโหลดไม่ได้) */
+/**
+ * บทบาทที่เป็นเจ้าของสื่อได้ — ตอนนี้คือทุกบทบาท
+ * เก็บชื่อนี้ไว้เพราะตาราง TRANSITIONS อ่านแล้วเข้าใจได้ว่าเส้นทางไหนเป็นสิทธิ์ของเจ้าของ
+ * ไม่ใช่ของผู้ตรวจ ต่อให้รายชื่อจะเท่ากับทุกบทบาทก็ตาม
+ */
 const OWNER_CAPABLE_ROLES: readonly UserRole[] = [
   USER_ROLE.TEACHER,
   USER_ROLE.REVIEWER,
   USER_ROLE.ADMIN,
 ];
 
-/** บทบาทที่ตรวจสื่อได้ */
-const REVIEW_ROLES: readonly UserRole[] = [USER_ROLE.REVIEWER, USER_ROLE.ADMIN];
+/** รอบแรกและรอบสุดท้ายเป็นคนละอำนาจตัดสิน */
+const SUBJECT_REVIEW_ROLES: readonly UserRole[] = [USER_ROLE.REVIEWER];
+const ACADEMIC_REVIEW_ROLES: readonly UserRole[] = [USER_ROLE.ADMIN];
 
 /* ------------------------------------------------------------------ */
 /* นิยาม transition                                                    */
@@ -110,10 +120,12 @@ export type TransitionRule = {
   requiresComment: boolean;
   /** ต้องยังไม่มีผู้ตรวจถือเรื่องอยู่ */
   requiresUnassigned: boolean;
-  /** ต้องมี metadata ครบตามเกณฑ์ R1 */
+  /** ต้องกรอกข้อมูลประกอบครบ */
   requiresCompleteMetadata: boolean;
   /** ต้องมีไฟล์แนบอย่างน้อย 1 ไฟล์ */
   requiresFile: boolean;
+  /** ต้องบันทึกผลตรวจครบทุกหัวข้อก่อนส่งต่อหัวหน้าวิชาการ */
+  requiresReviewComplete: boolean;
   /** กฎเหล็กข้อ 4: ต้องสร้าง media_version ใหม่ ห้ามทับของเดิม */
   createsNewVersion: boolean;
 
@@ -136,6 +148,7 @@ const rule = (
   requiresUnassigned: false,
   requiresCompleteMetadata: false,
   requiresFile: false,
+  requiresReviewComplete: false,
   createsNewVersion: false,
   ...r,
 });
@@ -152,14 +165,14 @@ export const TRANSITIONS: readonly TransitionRule[] = [
     ownerOnly: true,
     requiresCompleteMetadata: true,
     requiresFile: true,
-    label: 'ส่งตรวจ',
-    description: 'ส่งสื่อเข้าคิวให้ผู้ตรวจพิจารณา',
+    label: 'ส่งให้หัวหน้ากลุ่มสาระตรวจ',
+    description: 'ส่งสื่อเข้าคิวของกลุ่มสาระที่เลือกให้หัวหน้ากลุ่มสาระพิจารณา',
     intent: 'primary',
   }),
   rule({
     from: MEDIA_STATUS.PENDING,
     to: MEDIA_STATUS.IN_REVIEW,
-    roles: REVIEW_ROLES,
+    roles: SUBJECT_REVIEW_ROLES,
     requiresUnassigned: true,
     label: 'รับเรื่องตรวจ',
     description: 'รับสื่อชิ้นนี้มาตรวจ คนอื่นจะรับซ้ำไม่ได้',
@@ -168,7 +181,7 @@ export const TRANSITIONS: readonly TransitionRule[] = [
   rule({
     from: MEDIA_STATUS.IN_REVIEW,
     to: MEDIA_STATUS.PENDING,
-    roles: REVIEW_ROLES,
+    roles: SUBJECT_REVIEW_ROLES,
     assigneeOnly: true,
     label: 'คืนคิว',
     description: 'ปล่อยสื่อกลับเข้าคิวให้ผู้ตรวจคนอื่นรับต่อ',
@@ -176,27 +189,28 @@ export const TRANSITIONS: readonly TransitionRule[] = [
   }),
   rule({
     from: MEDIA_STATUS.IN_REVIEW,
-    to: MEDIA_STATUS.APPROVED,
-    roles: REVIEW_ROLES,
+    to: MEDIA_STATUS.ACADEMIC_REVIEW,
+    roles: SUBJECT_REVIEW_ROLES,
     assigneeOnly: true,
-    label: 'อนุมัติเผยแพร่',
-    description: 'ผ่านเกณฑ์ BLOCKING ครบ นำเข้าคลังให้อาจารย์คนอื่นค้นหาได้',
+    requiresReviewComplete: true,
+    label: 'ส่งต่อหัวหน้าวิชาการ',
+    description: 'ตรวจครบทุกหัวข้อแล้ว ส่งต่อให้หัวหน้าวิชาการตรวจขั้นสุดท้าย',
     intent: 'primary',
   }),
   rule({
     from: MEDIA_STATUS.IN_REVIEW,
     to: MEDIA_STATUS.REVISION,
-    roles: REVIEW_ROLES,
+    roles: SUBJECT_REVIEW_ROLES,
     assigneeOnly: true,
     requiresComment: true,
-    label: 'ให้แก้ไข',
+    label: 'ส่งกลับให้อาจารย์แก้ไข',
     description: 'ส่งกลับให้เจ้าของแก้ ต้องระบุจุดที่ต้องแก้อย่างน้อย 1 ข้อ',
     intent: 'warning',
   }),
   rule({
     from: MEDIA_STATUS.IN_REVIEW,
     to: MEDIA_STATUS.REJECTED,
-    roles: REVIEW_ROLES,
+    roles: SUBJECT_REVIEW_ROLES,
     assigneeOnly: true,
     requiresReason: true,
     label: 'ไม่ผ่าน',
@@ -213,6 +227,35 @@ export const TRANSITIONS: readonly TransitionRule[] = [
     createsNewVersion: true,
     label: 'ส่งฉบับแก้ไข',
     description: 'ส่งกลับเข้าคิวเป็น version ใหม่ ไฟล์เดิมยังถูกเก็บไว้',
+    intent: 'primary',
+  }),
+  rule({
+    from: MEDIA_STATUS.ACADEMIC_REVIEW,
+    to: MEDIA_STATUS.APPROVED,
+    roles: ACADEMIC_REVIEW_ROLES,
+    label: 'อนุมัติผ่าน',
+    description: 'หัวหน้าวิชาการยืนยันผลขั้นสุดท้าย แจ้งผลกลับให้อาจารย์ และเผยแพร่สื่อเข้าคลัง',
+    intent: 'primary',
+  }),
+  rule({
+    from: MEDIA_STATUS.ACADEMIC_REVIEW,
+    to: MEDIA_STATUS.ACADEMIC_REVISION,
+    roles: ACADEMIC_REVIEW_ROLES,
+    requiresComment: true,
+    label: 'ส่งกลับแก้ไขเล็กน้อย',
+    description: 'ส่งกลับให้อาจารย์แก้ไขจุดเล็กน้อย พร้อมคอมเมนต์รายหัวข้อ',
+    intent: 'warning',
+  }),
+  rule({
+    from: MEDIA_STATUS.ACADEMIC_REVISION,
+    to: MEDIA_STATUS.ACADEMIC_REVIEW,
+    roles: OWNER_CAPABLE_ROLES,
+    ownerOnly: true,
+    requiresCompleteMetadata: true,
+    requiresFile: true,
+    createsNewVersion: true,
+    label: 'ส่งฉบับแก้ไขให้หัวหน้าวิชาการ',
+    description: 'ส่งเวอร์ชันใหม่กลับไปให้หัวหน้าวิชาการตรวจขั้นสุดท้ายโดยไม่ย้อนกลับกลุ่มสาระ',
     intent: 'primary',
   }),
   rule({
@@ -259,10 +302,12 @@ export type TransitionContext = {
   reason?: string | null;
   /** จำนวนคอมเมนต์ที่ผูกกับ version ปัจจุบัน */
   commentCount?: number;
-  /** metadata ครบตามเกณฑ์ R1 หรือยัง — ตรวจฝั่งเซิร์ฟเวอร์ */
+  /** ข้อมูลประกอบครบหรือยัง — ตรวจฝั่งเซิร์ฟเวอร์ */
   hasCompleteMetadata?: boolean;
   /** จำนวนไฟล์ใน version ปัจจุบัน */
   fileCount?: number;
+  /** หัวหน้ากลุ่มสาระบันทึกผลครบทุกหัวข้อและพร้อมส่งต่อหรือยัง */
+  hasCompletedReview?: boolean;
 };
 
 export type DenialCode =
@@ -275,6 +320,7 @@ export type DenialCode =
   | 'ALREADY_ASSIGNED'
   | 'REASON_REQUIRED'
   | 'COMMENT_REQUIRED'
+  | 'REVIEW_INCOMPLETE'
   | 'METADATA_INCOMPLETE'
   | 'FILE_REQUIRED';
 
@@ -289,7 +335,8 @@ export const DENIAL_MESSAGES: Record<DenialCode, string> = {
   ALREADY_ASSIGNED: 'มีผู้ตรวจรับเรื่องนี้ไปแล้ว',
   REASON_REQUIRED: 'ต้องระบุเหตุผล',
   COMMENT_REQUIRED: 'ต้องมีคอมเมนต์ระบุจุดที่ต้องแก้อย่างน้อย 1 ข้อ',
-  METADATA_INCOMPLETE: 'กรอกข้อมูลสื่อไม่ครบตามเกณฑ์ R1',
+  REVIEW_INCOMPLETE: 'ต้องบันทึกผลตรวจให้ครบทุกหัวข้อก่อนส่งต่อ',
+  METADATA_INCOMPLETE: 'กรอกข้อมูลสื่อไม่ครบ',
   FILE_REQUIRED: 'ต้องแนบไฟล์อย่างน้อย 1 ไฟล์',
 };
 
@@ -323,6 +370,7 @@ const HTTP_STATUS_BY_CODE: Record<DenialCode, number> = {
   ALREADY_ASSIGNED: 409,
   REASON_REQUIRED: 422,
   COMMENT_REQUIRED: 422,
+  REVIEW_INCOMPLETE: 422,
   METADATA_INCOMPLETE: 422,
   FILE_REQUIRED: 422,
 };
@@ -348,6 +396,9 @@ const checkActorEligibility = (r: TransitionRule, ctx: TransitionContext): Denia
   if (r.requiresUnassigned && ctx.assigneeId) return 'ALREADY_ASSIGNED';
   if (r.requiresCompleteMetadata && ctx.hasCompleteMetadata !== true) return 'METADATA_INCOMPLETE';
   if (r.requiresFile && (ctx.fileCount ?? 0) < 1) return 'FILE_REQUIRED';
+  if (r.requiresReviewComplete && ctx.hasCompletedReview !== true) {
+    return 'REVIEW_INCOMPLETE';
+  }
   return null;
 };
 

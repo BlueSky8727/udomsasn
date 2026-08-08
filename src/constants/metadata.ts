@@ -1,17 +1,15 @@
 /**
- * metadata.ts — นิยามเดียวของคำว่า "metadata ครบ" ตามเกณฑ์ R1
+ * metadata.ts — นิยามเดียวของคำว่า "ข้อมูลประกอบครบ"
  *
  * ใช้ที่เดียวกันทั้ง
  *  - ฟอร์มอัปโหลด (บอกผู้ใช้ว่ายังขาดช่องไหน)
  *  - ตัวคำนวณ hasCompleteMetadata ที่ส่งเข้า assertTransition()
- *  - ผลตรวจ R1 ของทั้งคนและ AI
+ *  - ข้อมูลที่ส่งให้ผู้ตรวจและผู้ช่วย AI
  *
  * เหตุผลเดียวกับกฎเหล็กข้อ 1: ห้ามให้แต่ละ API เช็ค metadata กันคนละแบบ
  */
 
-import type { RubricCode } from './rubric';
-
-/** ฟิลด์ที่ R1 บังคับ */
+/** ฟิลด์ที่ต้องกรอกก่อนส่งตรวจ */
 export const REQUIRED_METADATA_FIELDS = [
   'title',
   'description',
@@ -32,7 +30,7 @@ export type MetadataField = RequiredMetadataField | RecommendedMetadataField;
 /** ชื่อช่องภาษาไทย ใช้ทั้งใน label ของฟอร์มและข้อความแจ้งเตือน */
 export const METADATA_FIELD_LABELS: Record<MetadataField, string> = {
   title: 'ชื่อเรื่อง',
-  description: 'คำอธิบาย',
+  description: 'สาระการเรียนรู้',
   subject: 'วิชา',
   gradeLevel: 'ระดับชั้น',
   learningObjectives: 'จุดประสงค์การเรียนรู้',
@@ -41,9 +39,9 @@ export const METADATA_FIELD_LABELS: Record<MetadataField, string> = {
 };
 
 export const METADATA_FIELD_HINTS: Partial<Record<MetadataField, string>> = {
-  description: 'อธิบายว่าสื่อนี้คืออะไร ใช้สอนตอนไหน และคนอื่นเอาไปใช้ยังไง',
+  description: 'ระบุเนื้อหา สาระสำคัญ และประเด็นที่ผู้เรียนควรรู้',
   learningObjectives: 'เขียนเป็นข้อ ๆ ว่าผู้เรียนจะทำอะไรได้หลังใช้สื่อนี้',
-  license: 'ระบุเงื่อนไขการนำไปใช้ต่อ เกี่ยวข้องกับเกณฑ์ R6',
+  license: 'ระบุเงื่อนไขว่าผู้อื่นสามารถนำสื่อนี้ไปใช้ต่อได้อย่างไร',
 };
 
 /**
@@ -65,7 +63,7 @@ export type MediaMetadataInput = Partial<Record<RequiredMetadataField, unknown>>
 const textLength = (value: unknown): number =>
   typeof value === 'string' ? value.trim().length : 0;
 
-/** ช่องที่ยังกรอกไม่ครบตาม R1 */
+/** ช่องที่ยังกรอกไม่ครบ */
 export function missingMetadataFields(
   metadata: MediaMetadataInput,
 ): readonly RequiredMetadataField[] {
@@ -99,6 +97,3 @@ export function missingRecommendedFields(
     return textLength(value) < 1;
   });
 }
-
-/** เกณฑ์ที่ผลของฟังก์ชันในไฟล์นี้ใช้ตัดสิน */
-export const METADATA_RUBRIC_CODE: RubricCode = 'R1';

@@ -4,27 +4,62 @@ import { PageHeading } from '@/components/ui/page-heading';
 import { Metric, SectionCard } from '@/components/ui/enterprise';
 import { QueueTable } from '@/components/review/queue-table';
 import { REVIEW_JOBS } from '@/constants/enterprise-data';
-import { getViewerRole } from '@/lib/auth';
+import { MEDIA_STATUS, USER_ROLE } from '@/constants/workflow';
+import { getViewerRole, getViewerSubjectGroup } from '@/lib/auth';
 export default async function QueuePage() {
-  const role = await getViewerRole();
+  const [role, subjectGroup] = await Promise.all([getViewerRole(), getViewerSubjectGroup()]);
+  const jobs =
+    role === USER_ROLE.ADMIN
+      ? REVIEW_JOBS.filter(
+          (job) =>
+            job.status === MEDIA_STATUS.ACADEMIC_REVIEW ||
+            job.status === MEDIA_STATUS.ACADEMIC_REVISION,
+        )
+      : REVIEW_JOBS.filter(
+          (job) =>
+            job.department === subjectGroup &&
+            (job.status === MEDIA_STATUS.PENDING ||
+              job.status === MEDIA_STATUS.IN_REVIEW ||
+              job.status === MEDIA_STATUS.REVISION),
+        );
+  const waiting = jobs.filter(
+    (job) =>
+      job.status === MEDIA_STATUS.PENDING || job.status === MEDIA_STATUS.ACADEMIC_REVIEW,
+  );
+  const inReview = jobs.filter((job) => job.status === MEDIA_STATUS.IN_REVIEW);
+
   return (
     <AppShell role={role}>
       <PageHeading
         eyebrow="Review Center"
-        title="คิวตรวจสอบคุณภาพ"
-        description="รับเรื่อง มอบหมาย และตรวจสื่อภายใต้มาตรฐาน R1–R9"
+        title={role === USER_ROLE.ADMIN ? 'คิวตรวจขั้นสุดท้าย' : `คิวกลุ่มสาระ${subjectGroup ?? ''}`}
+        description={
+          role === USER_ROLE.ADMIN
+            ? 'สื่อในหน้านี้ผ่านหัวหน้ากลุ่มสาระและมีคอมเมนต์รายหัวข้อครบแล้ว'
+            : 'แสดงเฉพาะสื่อที่อาจารย์เลือกส่งมายังกลุ่มสาระที่คุณได้รับมอบหมาย'
+        }
       />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Metric label="รอรับเรื่อง" value="12" detail="เก่าสุด 4 ชั่วโมง" icon="inbox" />
-        <Metric label="กำลังตรวจ" value="5" detail="3 งานเป็นของคุณ" icon="eye" />
+        <Metric
+          label={role === USER_ROLE.ADMIN ? 'รอตรวจขั้นสุดท้าย' : 'รอรับเรื่อง'}
+          value={String(waiting.length)}
+          detail={waiting.length > 0 ? `เก่าสุด ${waiting.at(-1)?.age ?? '-'}` : 'ไม่มีงานค้าง'}
+          icon="inbox"
+        />
+        <Metric
+          label="กำลังตรวจ"
+          value={String(inReview.length)}
+          detail={role === USER_ROLE.ADMIN ? 'ตรวจโดยหัวหน้าวิชาการ' : 'อยู่ในความรับผิดชอบของคุณ'}
+          icon="eye"
+        />
         <Metric label="SLA วันนี้" value="94%" detail="ภายใน 24 ชั่วโมง" icon="clock" />
       </div>
       <SectionCard
         className="mt-6"
-        title="รายการตรวจ"
-        description="AI เป็นข้อมูลประกอบเท่านั้น การเปลี่ยนสถานะต้องทำโดยผู้ตรวจ"
+        title={role === USER_ROLE.ADMIN ? 'รายการรออนุมัติ' : 'สื่อที่ส่งเข้ากลุ่มสาระของคุณ'}
+        description="ทุกหัวข้อบันทึกผลและคอมเมนต์แยกกัน AI เป็นเพียงข้อมูลประกอบ"
       >
-        <QueueTable jobs={REVIEW_JOBS} />
+        <QueueTable jobs={jobs} />
       </SectionCard>
     </AppShell>
   );

@@ -55,15 +55,10 @@ AI เป็นแค่ผู้ช่วยคัดกรอง เขีย�
 
 ## สถานะและเส้นทาง
 
-7 สถานะ: `DRAFT` `PENDING` `IN_REVIEW` `REVISION` `APPROVED` `REJECTED` `ARCHIVED`
+9 สถานะ: `DRAFT` `PENDING` `IN_REVIEW` `ACADEMIC_REVIEW` `REVISION` `ACADEMIC_REVISION` `APPROVED` `REJECTED` `ARCHIVED`
 
-เส้นทางที่อนุญาตมี 9 เส้น **นอกจากนี้ปฏิเสธทั้งหมด** — รายละเอียดอยู่ที่ [docs/workflow.md](docs/workflow.md)
+เส้นทางที่อนุญาตมี 12 เส้น **นอกจากนี้ปฏิเสธทั้งหมด** — รายละเอียดอยู่ที่ [docs/workflow.md](docs/workflow.md)
 แหล่งความจริงคือตาราง `TRANSITIONS` ในโค้ด เอกสารเป็นคำอธิบายประกอบ
-
-## เกณฑ์ตรวจ R1–R9
-
-R1–R7 เป็น **BLOCKING** (ไม่ผ่านข้อใดข้อหนึ่ง = อนุมัติไม่ได้), R8–R9 เป็น **ADVISORY**
-ข้อสำคัญที่สุดคือ **R5 ใช้ต่อได้โดยไม่ต้องถามเจ้าของ** — รายละเอียดอยู่ที่ [docs/rubric.md](docs/rubric.md)
 
 ## ฐานข้อมูล
 
@@ -90,6 +85,17 @@ supabase/migrations
 ## ข้อควรระวังตอนเขียนโค้ด
 
 - อย่าสร้างหน้าใหม่ที่นักเรียนเข้ามาเรียน — ไม่ใช่ขอบเขตของระบบนี้
-- อย่าเพิ่ม status ใหม่โดยไม่ถามก่อน 7 สถานะนี้ตั้งใจให้ครบแล้ว
-- อย่าให้ VIEWER เห็นสื่อที่ไม่ใช่ `APPROVED` ไม่ว่าทางไหน
+- อย่าเพิ่ม status ใหม่โดยไม่ถามก่อน 9 สถานะนี้รองรับการตรวจสองชั้นครบแล้ว
+- คลังสื่อ (`/browse`) ต้องแสดงเฉพาะ `APPROVED` เท่านั้น ไม่ว่าคนเปิดจะมีบทบาทใด
+  สื่อที่ยังไม่ผ่านให้เห็นได้เฉพาะเจ้าของ (ที่ `สื่อของฉัน`) และผู้ตรวจ (ที่ `คิวตรวจ`)
 - ปุ่มที่ได้จาก `availableTransitions()` ยังต้องผ่าน `assertTransition()` ฝั่งเซิร์ฟเวอร์อีกรอบเสมอ
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

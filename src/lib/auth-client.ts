@@ -1,6 +1,9 @@
 // src/lib/auth-client.ts
 'use client';
 
+import { PREVIEW_ROLE_COOKIE } from '@/constants/auth';
+import type { UserRole } from '@/constants/workflow';
+
 /**
  * จุดต่อกับระบบยืนยันตัวตนฝั่งเบราว์เซอร์ — ที่เดียวที่ต้องแก้ตอนเชื่อม Supabase Auth
  *
@@ -12,6 +15,11 @@
  */
 
 export type Credentials = { email: string; password: string };
+
+export type SignInOptions = {
+  role: UserRole;
+  remember: boolean;
+};
 
 export type SignInResult = { ok: true } | { ok: false; message: string };
 
@@ -43,9 +51,16 @@ export const DEV_LOGIN_ENABLED =
  * ห้ามส่งข้อความ error ดิบจาก Supabase ออกหน้าจอ และห้ามแยกว่าอีเมลผิดหรือรหัสผ่านผิด
  * เพราะจะกลายเป็นช่องให้ไล่เดาว่าอีเมลไหนมีบัญชีอยู่ในระบบ ใช้ข้อความเดียวเสมอ
  */
-export async function signIn(credentials: Credentials): Promise<SignInResult> {
+export async function signIn(
+  credentials: Credentials,
+  options: SignInOptions,
+): Promise<SignInResult> {
   void credentials;
-  if (DEV_LOGIN_ENABLED) return { ok: true };
+  if (DEV_LOGIN_ENABLED) {
+    const maxAge = options.remember ? '; Max-Age=2592000' : '';
+    document.cookie = `${PREVIEW_ROLE_COOKIE}=${encodeURIComponent(options.role)}; Path=/; SameSite=Lax${maxAge}`;
+    return { ok: true };
+  }
   return { ok: false, message: NOT_CONNECTED };
 }
 
@@ -59,5 +74,6 @@ export async function signIn(credentials: Credentials): Promise<SignInResult> {
  * เพราะปลายทางของการกดออกจากระบบไม่เปลี่ยนไม่ว่าจะเชื่อมแล้วหรือยัง
  */
 export async function signOut(): Promise<void> {
+  document.cookie = `${PREVIEW_ROLE_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
   return;
 }

@@ -20,7 +20,7 @@ export default async function Analytics() {
           detail="เป้าหมายไม่เกิน 24 ชม."
           icon="clock"
         />
-        <Metric label="Approval rate" value="81%" detail="R5 เป็นสาเหตุแก้ไขสูงสุด" icon="check" />
+        <Metric label="Approval rate" value="81%" detail="การนำไปใช้ต่อเป็นสาเหตุแก้ไขสูงสุด" icon="check" />
         <Metric
           label="Reuse events"
           value="1,284"
@@ -42,10 +42,10 @@ export default async function Analytics() {
         <SectionCard title="เหตุผลที่ถูกให้แก้ไข">
           <div className="space-y-4">
             {[
-              ['R5 นำไปใช้ต่อไม่ได้', 34],
-              ['R6 แหล่งที่มา/ลิขสิทธิ์', 27],
-              ['R7 ข้อมูลส่วนบุคคล', 18],
-              ['R1 Metadata ไม่ครบ', 14],
+              ['นำไปใช้ต่อไม่ได้', 34],
+              ['แหล่งที่มา/ลิขสิทธิ์', 27],
+              ['ข้อมูลส่วนบุคคล', 18],
+              ['ข้อมูลประกอบไม่ครบ', 14],
               ['อื่น ๆ', 7],
             ].map(([x, v]) => (
               <div key={String(x)}>

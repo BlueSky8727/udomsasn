@@ -1,6 +1,6 @@
 # Udomsasn Media QA — V2 Enterprise
 
-ระบบคลังสื่อการสอนพร้อม workflow ตรวจสอบคุณภาพ R1–R9, versioning, audit trail, Supabase และ Typhoon AI screening
+ระบบคลังสื่อการสอนพร้อมขั้นตอนตรวจสองชั้น ระบบเวอร์ชัน ประวัติการทำรายการ Supabase และผู้ช่วย Typhoon
 
 ## Run
 1. ใช้ Node 22+: `nvm install 22 && nvm use 22`
@@ -10,4 +10,4 @@
 5. `npm run dev`
 
 ## AI safety
-Typhoon เป็นผู้ช่วยคัดกรองเท่านั้น API `/api/ai/review` คืน `canChangeStatus:false`; R3 ถูกสงวนให้มนุษย์ตัดสินเสมอ และ API key อยู่ฝั่ง server เท่านั้น
+Typhoon เป็นผู้ช่วยสรุปและชี้จุดที่ควรตรวจเท่านั้น API `/api/ai/review` คืน `canChangeStatus:false`; มนุษย์เป็นผู้ตัดสินเสมอ และ API key อยู่ฝั่ง server เท่านั้น

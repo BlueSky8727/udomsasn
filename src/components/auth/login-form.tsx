@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Icon } from '@/components/ui/icons';
 import { DEV_LOGIN_ENABLED, signIn, type Credentials } from '@/lib/auth-client';
+import { ROLE_LABELS, USER_ROLE, type UserRole } from '@/constants/workflow';
 
 /**
  * ฟอร์มเข้าสู่ระบบ
@@ -21,6 +22,28 @@ type FieldErrors = { email?: string; password?: string };
 /** พอเป็นรูปแบบอีเมลก็พอ ความถูกต้องจริงตัดสินที่ฝั่งเซิร์ฟเวอร์ตอนล็อกอิน */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const LOGIN_ROLES: readonly {
+  role: UserRole;
+  description: string;
+  icon: 'book' | 'layers' | 'shield';
+}[] = [
+  {
+    role: USER_ROLE.TEACHER,
+    description: 'สร้าง ส่ง และติดตามสื่อ',
+    icon: 'book',
+  },
+  {
+    role: USER_ROLE.REVIEWER,
+    description: 'ตรวจสื่อของกลุ่มสาระ',
+    icon: 'layers',
+  },
+  {
+    role: USER_ROLE.ADMIN,
+    description: 'ตรวจขั้นสุดท้ายและจัดการบทบาท',
+    icon: 'shield',
+  },
+];
+
 const validate = ({ email, password }: Credentials): FieldErrors => {
   const errors: FieldErrors = {};
   if (!email) errors.email = 'กรอกอีเมล';
@@ -33,6 +56,7 @@ export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>(USER_ROLE.TEACHER);
   const [showPassword, setShowPassword] = useState(false);
   /** ตอนเชื่อมจริงค่านี้จะไปกำหนดว่า session อยู่ถาวรหรือหมดอายุเมื่อปิดเบราว์เซอร์ */
   const [remember, setRemember] = useState(true);
@@ -50,7 +74,7 @@ export function LoginForm() {
     if (errors.email || errors.password) return;
 
     setSubmitting(true);
-    const result = await signIn(credentials);
+    const result = await signIn(credentials, { role: selectedRole, remember });
     setSubmitting(false);
 
     if (result.ok) {
@@ -65,6 +89,54 @@ export function LoginForm() {
   return (
     <>
       <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
+        <fieldset disabled={submitting}>
+          <legend className="text-sm font-semibold">เลือกหน้าที่ต้องการเข้า</legend>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            {LOGIN_ROLES.map((item) => {
+              const selected = selectedRole === item.role;
+              return (
+                <label
+                  key={item.role}
+                  className={`relative flex cursor-pointer gap-3 rounded-xl border p-3 transition sm:min-h-32 sm:flex-col ${
+                    selected
+                      ? 'border-brand bg-brand/8 text-brand shadow-sm'
+                      : 'border-line bg-panel text-ink-muted hover:border-brand/30 hover:bg-panel-hover'
+                  } ${submitting ? 'cursor-not-allowed opacity-60' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="login-role"
+                    value={item.role}
+                    checked={selected}
+                    onChange={() => setSelectedRole(item.role)}
+                    className="sr-only"
+                  />
+                  <span
+                    className={`grid size-9 shrink-0 place-items-center rounded-lg ${
+                      selected ? 'bg-brand text-brand-contrast' : 'bg-surface text-ink-faint'
+                    }`}
+                  >
+                    <Icon name={item.icon} className="size-[18px]" />
+                  </span>
+                  <span>
+                    <strong className={`block text-xs font-semibold ${selected ? 'text-brand' : 'text-ink'}`}>
+                      {ROLE_LABELS[item.role]}
+                    </strong>
+                    <span className="mt-1 block text-[11px] leading-4 text-ink-faint">
+                      {item.description}
+                    </span>
+                  </span>
+                  {selected && (
+                    <span className="absolute right-2 top-2 grid size-5 place-items-center rounded-full bg-brand text-brand-contrast">
+                      <Icon name="check" className="size-3" />
+                    </span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
         <div>
           <label htmlFor="email" className="block text-sm font-semibold">
             อีเมล
@@ -174,7 +246,7 @@ export function LoginForm() {
           disabled={submitting}
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-contrast shadow-lg shadow-brand/15 transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ'}
+          {submitting ? 'กำลังตรวจสอบ...' : `เข้าสู่ระบบเป็น${ROLE_LABELS[selectedRole]}`}
         </button>
       </form>
 

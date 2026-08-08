@@ -1,32 +1,50 @@
 // src/app/admin/page.tsx
+import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/ui/app-shell';
 import { PageHeading } from '@/components/ui/page-heading';
 import { Metric, SectionCard, Pill } from '@/components/ui/enterprise';
+import { RoleAssignmentPanel } from '@/components/admin/role-assignment-panel';
+import { USER_ROLE } from '@/constants/workflow';
 import { getViewerRole } from '@/lib/auth';
+
 export default async function Admin() {
   const role = await getViewerRole();
+  if (role !== USER_ROLE.ADMIN) notFound();
+
   return (
     <AppShell role={role}>
       <PageHeading
         eyebrow="Administration"
-        title="จัดการระบบ"
-        description="ควบคุมผู้ใช้ ผู้ตรวจ Storage, AI และค่ากลาง โดยเก็บ audit ทุกการเปลี่ยนแปลง"
+        title="ผู้สมัครและการแต่งตั้งบทบาท"
+        description="ดูรายชื่อผู้สมัครทั้งหมด กำหนดบทบาทอาจารย์หรือหัวหน้ากลุ่มสาระ และเลือกกลุ่มสาระที่รับผิดชอบ"
       />
       <div className="grid gap-4 sm:grid-cols-3">
         <Metric
-          label="ผู้ใช้"
+          label="ผู้สมัครและบุคลากรทั้งหมด"
           value="146"
-          detail="อาจารย์ 122 · ผู้ตรวจ 18 · Admin 6"
+          detail="รวมบัญชีที่สมัครและเปิดใช้งานแล้ว"
           icon="users"
         />
         <Metric
-          label="ผู้ตรวจพร้อมรับงาน"
-          value="14"
-          detail="โหลดเฉลี่ย 2.6 งาน/คน"
+          label="รอแต่งตั้งบทบาท"
+          value="3"
+          detail="บัญชีใหม่ที่หัวหน้าวิชาการต้องตรวจ"
+          icon="inbox"
+        />
+        <Metric
+          label="หัวหน้ากลุ่มสาระ"
+          value="16"
+          detail="8 กลุ่มสาระเดิม · 8 สาขาวิชาศาสนา"
           icon="shield"
         />
-        <Metric label="AI Provider" value="Typhoon" detail="v2.5 · เปิดใช้งาน" icon="sparkles" />
       </div>
+      <SectionCard
+        className="mt-6"
+        title="รายชื่อผู้สมัครและบุคลากรทั้งหมด"
+        description="ค้นหา กรอง และแต่งตั้งบทบาทได้จากรายชื่อเดียว ผู้สมัครใหม่จะแสดงสถานะรอแต่งตั้ง"
+      >
+        <RoleAssignmentPanel />
+      </SectionCard>
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <SectionCard title="AI Configuration">
           <div className="space-y-3 text-xs">

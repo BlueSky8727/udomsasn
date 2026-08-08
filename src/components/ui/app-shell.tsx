@@ -14,6 +14,7 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const items = navItemsForRole(role);
+  const avatarLabel = role === 'TEACHER' ? 'อจ' : role === 'REVIEWER' ? 'ผต' : 'AD';
 
   const sidebar = (
     <div className="flex h-full flex-col px-4 py-5">
@@ -69,16 +70,28 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
       <div className="mt-auto space-y-2 border-t border-line/80 pt-4">
         <ThemeToggle />
         <LogoutButton onDone={() => setMobileOpen(false)} />
-        <div className="flex items-center gap-3 rounded-xl bg-panel/70 p-2.5">
+        <Link
+          href="/profile"
+          onClick={() => setMobileOpen(false)}
+          aria-label="เปิดข้อมูลของฉัน"
+          className={`group flex items-center gap-3 rounded-xl border p-2.5 transition-colors ${
+            pathname === '/profile'
+              ? 'border-brand/20 bg-brand/8'
+              : 'border-transparent bg-panel/70 hover:border-line hover:bg-panel'
+          }`}
+        >
           <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand/25 to-brand/5 text-sm font-bold text-brand">
-            AD
+            {avatarLabel}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold text-ink">ผู้ดูแลระบบ</p>
-            <p className="truncate text-[10px] text-ink-faint">{ROLE_LABELS[role]} · Preview</p>
+            <p className="truncate text-xs font-semibold text-ink">{ROLE_LABELS[role]}</p>
+            <p className="truncate text-[10px] text-ink-faint">บัญชีตัวอย่าง · Preview</p>
           </div>
-          <Icon name="more" className="size-4 text-ink-faint" />
-        </div>
+          <Icon
+            name="chevronRight"
+            className="size-4 text-ink-faint transition-transform group-hover:translate-x-0.5 group-hover:text-brand"
+          />
+        </Link>
       </div>
     </div>
   );

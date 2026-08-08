@@ -5,8 +5,8 @@
  * ถ้าจะย้ายไปเก็บในฐานข้อมูลภายหลัง ให้แทนที่ทั้งไฟล์นี้ที่เดียว
  */
 
-/** 8 กลุ่มสาระการเรียนรู้ตามหลักสูตรแกนกลางการศึกษาขั้นพื้นฐาน */
-export const SUBJECTS = [
+/** 8 กลุ่มสาระการเรียนรู้เดิม */
+export const GENERAL_SUBJECTS = [
   'ภาษาไทย',
   'คณิตศาสตร์',
   'วิทยาศาสตร์และเทคโนโลยี',
@@ -16,6 +16,27 @@ export const SUBJECTS = [
   'การงานอาชีพ',
   'ภาษาต่างประเทศ',
 ] as const;
+
+/** 8 สาขาวิชาศาสนาที่เพิ่มในรายการกลุ่มสาระปลายทาง */
+export const RELIGIOUS_SUBJECTS = [
+  'อัลกุรอานและตัฟซีฟ',
+  'อัลฮะดีษ',
+  'อัลอะกีดะฮฺ',
+  'อัลฟิกฮฺ',
+  'อัตตารีค',
+  'อัคลาค',
+  'ภาษาอาหรับ',
+  'ภาษามลายู',
+] as const;
+
+/** ใช้สร้างเมนูแบบแยกหมวดในหน้าส่งสื่อ */
+export const SUBJECT_GROUPS = [
+  { label: 'สามัญ', subjects: GENERAL_SUBJECTS },
+  { label: 'ศาสนา', subjects: RELIGIOUS_SUBJECTS },
+] as const;
+
+/** รายการแบบแบนสำหรับตัวกรองและหน้ากำหนดบทบาท */
+export const SUBJECTS = [...GENERAL_SUBJECTS, ...RELIGIOUS_SUBJECTS] as const;
 
 export const GRADE_LEVELS = [
   'ป.1',
@@ -68,7 +89,7 @@ export type LearningDomainCode = (typeof LEARNING_DOMAINS)[number]['code'];
  */
 export const MAX_OBJECTIVES_PER_DOMAIN = 5;
 
-/** ตัวเลือกสัญญาอนุญาต เกี่ยวข้องกับเกณฑ์ R6 */
+/** ตัวเลือกสัญญาอนุญาตสำหรับบอกเงื่อนไขการนำสื่อไปใช้ต่อ */
 export const LICENSES = [
   'ใช้ได้อิสระภายในหน่วยงาน',
   'CC BY (ระบุแหล่งที่มา)',
