@@ -1,5 +1,6 @@
 // src/app/(auth)/login/page.tsx
 import Link from 'next/link';
+import { LoginForm } from '@/components/auth/login-form';
 import { Icon } from '@/components/ui/icons';
 
 export default function LoginPage() {
@@ -53,45 +54,7 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-ink-muted">
             ใช้บัญชีของหน่วยงานเพื่อเข้าใช้งานคลังสื่อการสอน
           </p>
-          <form className="mt-8 space-y-5">
-            <label className="block">
-              <span className="text-sm font-semibold">อีเมล</span>
-              <input
-                type="email"
-                placeholder="name@udomsasn.ac.th"
-                className="mt-2 h-12 w-full rounded-xl border border-line bg-panel px-4 text-sm outline-none transition focus:border-brand/45 focus:ring-4 focus:ring-brand/5"
-              />
-            </label>
-            <label className="block">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">รหัสผ่าน</span>
-                <button type="button" className="text-xs font-medium text-brand">
-                  ลืมรหัสผ่าน?
-                </button>
-              </div>
-              <input
-                type="password"
-                placeholder="••••••••"
-                className="mt-2 h-12 w-full rounded-xl border border-line bg-panel px-4 text-sm outline-none transition focus:border-brand/45 focus:ring-4 focus:ring-brand/5"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-xs text-ink-muted">
-              <input type="checkbox" className="size-4 accent-[var(--brand)]" />
-              จดจำการเข้าสู่ระบบบนอุปกรณ์นี้
-            </label>
-            <Link
-              href="/"
-              className="flex h-12 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-brand-contrast shadow-lg shadow-brand/15 transition hover:bg-brand-strong"
-            >
-              เข้าสู่ระบบ
-            </Link>
-          </form>
-          <div className="mt-7 rounded-xl border border-line bg-panel p-4">
-            <p className="text-xs leading-5 text-ink-faint">
-              หน้านี้เป็น UI preview ระบบยืนยันตัวตนจริงจะเชื่อมกับ Supabase Auth และตรวจบทบาทจาก
-              profile ฝั่งเซิร์ฟเวอร์
-            </p>
-          </div>
+          <LoginForm />
         </div>
       </section>
     </main>

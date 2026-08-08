@@ -14,3 +14,13 @@ import { USER_ROLE, type UserRole } from '@/constants/workflow';
 export async function getViewerRole(): Promise<UserRole> {
   return USER_ROLE.ADMIN;
 }
+
+/**
+ * ชื่อผู้ใช้ที่กำลังเข้าใช้งาน — ใช้ตัดสินว่าใครเป็นเจ้าของสื่อชิ้นไหน
+ *
+ * TODO: อ่านจาก session + profiles แล้วเปลี่ยนไปเทียบด้วย id ไม่ใช่ชื่อ
+ * ชื่อซ้ำกันได้และแก้ได้ จึงใช้เป็นกุญแจถาวรไม่ได้ ตอนนี้ข้อมูลตัวอย่างมีแค่ชื่อจึงใช้ไปก่อน
+ */
+export async function getViewerName(): Promise<string> {
+  return 'อ.ปภาวี ศรีสุข';
+}

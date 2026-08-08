@@ -1,11 +1,9 @@
 // src/app/(admin)/queue/page.tsx
-import Link from 'next/link';
 import { AppShell } from '@/components/ui/app-shell';
 import { PageHeading } from '@/components/ui/page-heading';
-import { Metric, Pill, SectionCard } from '@/components/ui/enterprise';
-import { Icon } from '@/components/ui/icons';
+import { Metric, SectionCard } from '@/components/ui/enterprise';
+import { QueueTable } from '@/components/review/queue-table';
 import { REVIEW_JOBS } from '@/constants/enterprise-data';
-import { STATUS_LABELS } from '@/constants/workflow';
 import { getViewerRole } from '@/lib/auth';
 export default async function QueuePage() {
   const role = await getViewerRole();
@@ -22,68 +20,11 @@ export default async function QueuePage() {
         <Metric label="SLA วันนี้" value="94%" detail="ภายใน 24 ชั่วโมง" icon="clock" />
       </div>
       <SectionCard
+        className="mt-6"
         title="รายการตรวจ"
         description="AI เป็นข้อมูลประกอบเท่านั้น การเปลี่ยนสถานะต้องทำโดยผู้ตรวจ"
       >
-        <div className="mb-4 flex flex-wrap gap-2">
-          <button className="rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-brand-contrast">
-            ทั้งหมด
-          </button>
-          {['รอรับเรื่อง', 'กำลังตรวจ', 'ให้แก้ไข', 'ความเสี่ยงสูง'].map((x) => (
-            <button
-              key={x}
-              className="rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink-muted"
-            >
-              {x}
-            </button>
-          ))}
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="border-b border-line text-[11px] uppercase text-ink-faint">
-              <tr>
-                <th className="pb-3">สื่อ</th>
-                <th>ผู้ส่ง</th>
-                <th>สถานะ</th>
-                <th>AI</th>
-                <th>อายุคิว</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {REVIEW_JOBS.map((j) => (
-                <tr key={j.id} className="border-b border-line/70 last:border-0">
-                  <td className="py-4">
-                    <p className="font-semibold">{j.title}</p>
-                    <p className="mt-1 text-xs text-ink-faint">
-                      {j.id} · {j.subject} · {j.grade} · v{j.version}
-                    </p>
-                  </td>
-                  <td className="text-xs text-ink-muted">{j.owner}</td>
-                  <td>
-                    <Pill>{STATUS_LABELS[j.status]}</Pill>
-                  </td>
-                  <td>
-                    <Pill
-                      tone={j.aiRisk === 'สูง' ? 'danger' : j.aiRisk === 'กลาง' ? 'warn' : 'ok'}
-                    >
-                      {j.aiRisk}
-                    </Pill>
-                  </td>
-                  <td className="text-xs text-ink-muted">{j.age}</td>
-                  <td>
-                    <Link
-                      href={`/review/${j.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand"
-                    >
-                      เปิดตรวจ <Icon name="chevronRight" className="size-3" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <QueueTable jobs={REVIEW_JOBS} />
       </SectionCard>
     </AppShell>
   );

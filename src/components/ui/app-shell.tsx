@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
+import { LogoutButton } from '@/components/auth/logout-button';
 import { canSeePrimaryAction, navItemsForRole, PRIMARY_ACTION } from '@/constants/navigation';
 import { ROLE_LABELS, type UserRole } from '@/constants/workflow';
 import { Icon } from './icons';
@@ -67,6 +68,7 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
 
       <div className="mt-auto space-y-2 border-t border-line/80 pt-4">
         <ThemeToggle />
+        <LogoutButton onDone={() => setMobileOpen(false)} />
         <div className="flex items-center gap-3 rounded-xl bg-panel/70 p-2.5">
           <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-brand/25 to-brand/5 text-sm font-bold text-brand">
             AD
@@ -107,17 +109,6 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
           >
             <Icon name="menu" className="size-5" />
           </button>
-          <div className="relative hidden max-w-md flex-1 sm:block">
-            <Icon
-              name="search"
-              className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
-            />
-            <input
-              aria-label="ค้นหาทั้งระบบ"
-              placeholder="ค้นหาสื่อ วิชา หรือคำสำคัญ..."
-              className="h-10 w-full rounded-xl border border-line/80 bg-panel/70 pl-10 pr-4 text-sm outline-none transition placeholder:text-ink-faint focus:border-brand/40 focus:bg-surface focus:ring-4 focus:ring-brand/5"
-            />
-          </div>
           <div className="ml-auto flex items-center gap-2">
             <button className="grid size-9 place-items-center rounded-xl border border-line/80 bg-panel/60 text-ink-muted transition hover:text-brand">
               <Icon name="bell" className="size-[18px]" />

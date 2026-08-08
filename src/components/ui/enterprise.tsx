@@ -29,14 +29,19 @@ export function Metric({
 export function SectionCard({
   title,
   description,
+  className = '',
   children,
 }: {
   title: string;
   description?: string;
+  /** ระยะห่างจากของที่อยู่ข้างบน การ์ดไม่กำหนด margin ให้เอง ผู้เรียกต้องสั่งเสมอ */
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-line/80 bg-panel p-5 shadow-sm">
+    <section
+      className={`rounded-2xl border border-line/80 bg-panel p-5 shadow-sm ${className}`}
+    >
       <div className="mb-5">
         <h2 className="font-bold tracking-[-.02em]">{title}</h2>
         {description && <p className="mt-1 text-xs leading-5 text-ink-faint">{description}</p>}

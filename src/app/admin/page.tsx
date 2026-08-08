@@ -2,7 +2,6 @@
 import { AppShell } from '@/components/ui/app-shell';
 import { PageHeading } from '@/components/ui/page-heading';
 import { Metric, SectionCard, Pill } from '@/components/ui/enterprise';
-import { RUBRIC_ITEMS } from '@/constants/rubric';
 import { getViewerRole } from '@/lib/auth';
 export default async function Admin() {
   const role = await getViewerRole();
@@ -11,7 +10,7 @@ export default async function Admin() {
       <PageHeading
         eyebrow="Administration"
         title="จัดการระบบ"
-        description="ควบคุมผู้ใช้ ผู้ตรวจ เกณฑ์ตรวจ Storage, AI และค่ากลาง โดยเก็บ audit ทุกการเปลี่ยนแปลง"
+        description="ควบคุมผู้ใช้ ผู้ตรวจ Storage, AI และค่ากลาง โดยเก็บ audit ทุกการเปลี่ยนแปลง"
       />
       <div className="grid gap-4 sm:grid-cols-3">
         <Metric
@@ -28,64 +27,36 @@ export default async function Admin() {
         />
         <Metric label="AI Provider" value="Typhoon" detail="v2.5 · เปิดใช้งาน" icon="sparkles" />
       </div>
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
-        <SectionCard
-          title="เกณฑ์ตรวจ R1–R9"
-          description="การแก้เกณฑ์ควรสร้าง criteria version ใหม่ ไม่แก้ผลตรวจเก่า"
-        >
-          <div className="space-y-2">
-            {RUBRIC_ITEMS.map((r) => (
-              <div
-                key={r.code}
-                className="flex items-center gap-3 rounded-xl border border-line bg-surface p-3"
-              >
-                <span className="grid size-8 place-items-center rounded-lg bg-brand/10 text-xs font-bold text-brand">
-                  {r.code}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold">{r.title}</p>
-                  <p className="text-[10px] text-ink-faint">
-                    {r.level === 'BLOCKING' ? 'ต้องผ่าน' : 'ควรปรับ'} · {r.aiRole}
-                  </p>
-                </div>
-                <button className="rounded-lg border border-line bg-panel px-2.5 py-1.5 text-[10px] font-semibold">
-                  แก้ไข
-                </button>
-              </div>
-            ))}
+      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        <SectionCard title="AI Configuration">
+          <div className="space-y-3 text-xs">
+            <div className="flex justify-between">
+              <span className="text-ink-muted">Provider</span>
+              <b>OpenTyphoon</b>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-ink-muted">Model</span>
+              <b className="max-w-48 truncate">typhoon-v2.5-30b-a3b-instruct</b>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-ink-muted">Temperature</span>
+              <b>0.2</b>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-ink-muted">Auto state change</span>
+              <Pill tone="ok">ปิดถาวร</Pill>
+            </div>
           </div>
         </SectionCard>
-        <div className="space-y-6">
-          <SectionCard title="AI Configuration">
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between">
-                <span className="text-ink-muted">Provider</span>
-                <b>OpenTyphoon</b>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-ink-muted">Model</span>
-                <b className="max-w-48 truncate">typhoon-v2.5-30b-a3b-instruct</b>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-ink-muted">Temperature</span>
-                <b>0.2</b>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-ink-muted">Auto state change</span>
-                <Pill tone="ok">ปิดถาวร</Pill>
-              </div>
-            </div>
-          </SectionCard>
-          <SectionCard title="Security">
-            <div className="space-y-3 text-xs text-ink-muted">
-              <p>✓ Supabase RLS เป็นด่านฐานข้อมูล</p>
-              <p>✓ Private Storage + signed URL</p>
-              <p>✓ Server-only Typhoon API key</p>
-              <p>✓ Audit log ทุก workflow transition</p>
-              <p>✓ Hard delete เฉพาะ DRAFT</p>
-            </div>
-          </SectionCard>
-        </div>
+        <SectionCard title="Security">
+          <div className="space-y-3 text-xs text-ink-muted">
+            <p>✓ Supabase RLS เป็นด่านฐานข้อมูล</p>
+            <p>✓ Private Storage + signed URL</p>
+            <p>✓ Server-only Typhoon API key</p>
+            <p>✓ Audit log ทุก workflow transition</p>
+            <p>✓ Hard delete เฉพาะ DRAFT</p>
+          </div>
+        </SectionCard>
       </div>
     </AppShell>
   );
