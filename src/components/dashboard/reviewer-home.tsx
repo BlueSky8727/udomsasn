@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Metric, Pill, SectionCard } from '@/components/ui/enterprise';
+import { Metric, Pill, SectionCard, TimeBadge } from '@/components/ui/enterprise';
 import { Icon } from '@/components/ui/icons';
 import type { ReviewJob } from '@/constants/enterprise-data';
 import { MEDIA_STATUS, STATUS_LABELS } from '@/constants/workflow';
@@ -129,14 +129,14 @@ export function ReviewerHome({
                       <p className="truncate text-sm font-semibold">{job.title}</p>
                       {job.aiRisk === 'สูง' && <Icon name="warning" className="size-4 shrink-0 text-status-rejected" />}
                     </div>
-                    <p className="mt-1 text-xs text-ink-faint">
-                      {job.id} · {job.owner} · {job.subject} · {job.grade} · รอมา {job.age}
-                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <p className="text-xs text-ink-faint">
+                        {job.id} · {job.owner} · {job.subject} · {job.grade}
+                      </p>
+                      <TimeBadge>รอมา {job.age}</TimeBadge>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Pill tone={job.aiRisk === 'สูง' ? 'danger' : job.aiRisk === 'กลาง' ? 'warn' : 'ok'}>
-                      AI {job.aiRisk}
-                    </Pill>
                     <Pill>{STATUS_LABELS[job.status]}</Pill>
                     <Icon name="chevronRight" className="size-4 text-ink-faint" />
                   </div>

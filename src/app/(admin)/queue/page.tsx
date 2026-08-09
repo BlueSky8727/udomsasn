@@ -1,4 +1,5 @@
 // src/app/(admin)/queue/page.tsx
+import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/ui/app-shell';
 import { PageHeading } from '@/components/ui/page-heading';
 import { Metric, SectionCard } from '@/components/ui/enterprise';
@@ -8,6 +9,8 @@ import { MEDIA_STATUS, USER_ROLE } from '@/constants/workflow';
 import { getViewerRole, getViewerSubjectGroup } from '@/lib/auth';
 export default async function QueuePage() {
   const [role, subjectGroup] = await Promise.all([getViewerRole(), getViewerSubjectGroup()]);
+  if (role !== USER_ROLE.REVIEWER && role !== USER_ROLE.ADMIN) notFound();
+
   const jobs =
     role === USER_ROLE.ADMIN
       ? REVIEW_JOBS.filter(

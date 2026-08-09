@@ -84,16 +84,8 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: 'หัวหน้าวิชาการ',
 };
 
-/**
- * บทบาทที่เป็นเจ้าของสื่อได้ — ตอนนี้คือทุกบทบาท
- * เก็บชื่อนี้ไว้เพราะตาราง TRANSITIONS อ่านแล้วเข้าใจได้ว่าเส้นทางไหนเป็นสิทธิ์ของเจ้าของ
- * ไม่ใช่ของผู้ตรวจ ต่อให้รายชื่อจะเท่ากับทุกบทบาทก็ตาม
- */
-const OWNER_CAPABLE_ROLES: readonly UserRole[] = [
-  USER_ROLE.TEACHER,
-  USER_ROLE.REVIEWER,
-  USER_ROLE.ADMIN,
-];
+/** เฉพาะอาจารย์เท่านั้นที่เป็นเจ้าของ สร้าง แก้ไข และส่งสื่อได้ */
+const OWNER_CAPABLE_ROLES: readonly UserRole[] = [USER_ROLE.TEACHER];
 
 /** รอบแรกและรอบสุดท้ายเป็นคนละอำนาจตัดสิน */
 const SUBJECT_REVIEW_ROLES: readonly UserRole[] = [USER_ROLE.REVIEWER];

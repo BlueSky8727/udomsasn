@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { LoginForm } from '@/components/auth/login-form';
 import { Icon } from '@/components/ui/icons';
+import { SchoolLogo } from '@/components/ui/school-logo';
 
 export default function LoginPage() {
   return (
@@ -10,9 +11,7 @@ export default function LoginPage() {
         <div className="absolute -left-24 top-1/3 size-80 rounded-full bg-brand/8 blur-3xl" />
         <div className="absolute -right-20 -top-20 size-72 rounded-full border border-brand/10" />
         <Link href="/" className="relative flex items-center gap-3">
-          <span className="grid size-11 place-items-center rounded-2xl bg-brand text-brand-contrast shadow-xl shadow-brand/20">
-            <Icon name="sparkles" className="size-5" />
-          </span>
+          <SchoolLogo className="size-14" />
           <div>
             <p className="font-bold">Udomsasn Media</p>
             <p className="text-xs text-ink-faint">Teaching Library</p>
@@ -41,9 +40,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="mb-9 lg:hidden">
             <Link href="/" className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-2xl bg-brand text-brand-contrast">
-                <Icon name="sparkles" className="size-5" />
-              </span>
+              <SchoolLogo className="size-12" />
               <strong>Udomsasn Media</strong>
             </Link>
           </div>

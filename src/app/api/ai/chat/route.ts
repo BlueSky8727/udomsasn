@@ -6,6 +6,12 @@ import { USER_ROLE } from '@/constants/workflow';
 import { getViewerRole, getViewerSubjectGroup } from '@/lib/auth';
 import { chatWithTyphoon, isTyphoonConfigured } from '@/lib/ai/typhoon';
 import { canOpenReviewJob } from '@/lib/review-access';
+import {
+  isSameOriginRequest,
+  readJsonBody,
+  RequestSecurityError,
+  takeRateLimit,
+} from '@/lib/request-security';
 
 const ChatBody = z.object({
   jobId: z.string().min(1).max(80),
@@ -49,12 +55,28 @@ function previewAnswer(question: string, isAcademic: boolean): string {
 
 export async function POST(request: Request) {
   try {
-    const body = ChatBody.parse(await request.json());
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ error: 'ไม่อนุญาตคำขอจากเว็บไซต์อื่น' }, { status: 403 });
+    }
+
     const [role, subjectGroup] = await Promise.all([getViewerRole(), getViewerSubjectGroup()]);
 
     if (role !== USER_ROLE.REVIEWER && role !== USER_ROLE.ADMIN) {
       return NextResponse.json({ error: 'ไม่มีสิทธิ์ใช้ผู้ช่วยตรวจ AI' }, { status: 403 });
     }
+
+    const rateLimit = takeRateLimit(request, `ai-chat:${role}`, 30, 10 * 60 * 1_000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'ถามถี่เกินไป กรุณารอสักครู่แล้วลองใหม่' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) },
+        },
+      );
+    }
+
+    const body = ChatBody.parse(await readJsonBody(request, 128 * 1_024));
 
     const job = REVIEW_JOBS.find((item) => item.id === body.jobId);
     if (!job || !canOpenReviewJob(job, role, subjectGroup)) {
@@ -106,6 +128,10 @@ ${topicNotes}
 
     return NextResponse.json({ provider: 'typhoon', answer, canChangeStatus: false });
   } catch (error) {
+    if (error instanceof RequestSecurityError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'ข้อมูลคำถามไม่ถูกต้อง' }, { status: 400 });
     }

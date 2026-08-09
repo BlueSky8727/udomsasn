@@ -1,22 +1,8 @@
 import Link from 'next/link';
 import { Metric, Pill, SectionCard } from '@/components/ui/enterprise';
 import { Icon } from '@/components/ui/icons';
-import type { DemoFeedback, DemoMedia } from '@/constants/mock-data';
+import type { DemoMedia } from '@/constants/mock-data';
 import { MEDIA_STATUS, STATUS_LABELS } from '@/constants/workflow';
-
-const FEEDBACK_LABEL: Record<DemoFeedback['decision'], string> = {
-  REVISION: 'ให้แก้ไข',
-  MINOR_REVISION: 'แก้ไขเล็กน้อย',
-  REJECTED: 'ไม่ผ่าน',
-  APPROVED: 'ผ่านแล้ว',
-};
-
-const feedbackTone = (decision: DemoFeedback['decision']) =>
-  decision === 'APPROVED'
-    ? ('ok' as const)
-    : decision === 'REJECTED'
-      ? ('danger' as const)
-      : ('warn' as const);
 
 /**
  * แดชบอร์ดของอาจารย์ — แยกงานเป็นฉบับร่าง เส้นทางตรวจ และผลที่ส่งกลับถึงเจ้าของ
@@ -36,7 +22,6 @@ export function TeacherHome({ name, media }: { name: string; media: readonly Dem
   const academicApprovals = media.filter(
     (item) => item.feedback?.fromRole === 'ACADEMIC_HEAD' && item.feedback.decision === 'APPROVED',
   );
-  const feedback = media.filter((item) => item.feedback);
   const needsAction =
     drafts.length +
     media.filter(
@@ -96,7 +81,7 @@ export function TeacherHome({ name, media }: { name: string; media: readonly Dem
             className="h-full transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand/35 group-hover:shadow-md"
           />
         </Link>
-        <Link href="/my-media?view=subject-feedback#media-list" aria-label="ดูรายการผลจากกลุ่มสาระ" className="group block rounded-2xl">
+        <Link href="/feedback" aria-label="ดูผลจากหัวหน้ากลุ่มสาระ" className="group block rounded-2xl">
           <Metric
             label="ผลจากกลุ่มสาระ"
             value={String(subjectFeedback.length)}
@@ -116,8 +101,11 @@ export function TeacherHome({ name, media }: { name: string; media: readonly Dem
         </Link>
       </section>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_.95fr]">
-        <SectionCard title="ฉบับร่างรอส่งตรวจ" description="สื่อที่บันทึกไว้ยังไม่ถูกส่งให้กลุ่มสาระ">
+      <SectionCard
+        className="mt-6"
+        title="ฉบับร่างรอส่งตรวจ"
+        description="สื่อที่บันทึกไว้ยังไม่ถูกส่งให้กลุ่มสาระ"
+      >
           {drafts.length === 0 ? (
             <div className="rounded-xl border border-dashed border-line bg-surface/60 px-6 py-10 text-center">
               <Icon name="file" className="mx-auto size-6 text-ink-faint" />
@@ -149,37 +137,7 @@ export function TeacherHome({ name, media }: { name: string; media: readonly Dem
               ))}
             </div>
           )}
-        </SectionCard>
-
-        <SectionCard title="ผลการตรวจส่งกลับ" description="ระบุชัดว่าใครเป็นผู้ส่งผลและต้องดำเนินการอะไรต่อ">
-          {feedback.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-line bg-surface/60 px-4 py-8 text-center text-xs text-ink-faint">
-              ยังไม่มีผลการตรวจส่งกลับ
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {feedback.map((item) => {
-                const result = item.feedback!;
-                return (
-                  <Link
-                    key={item.id}
-                    href={`/my-media/${item.id}`}
-                    className="block rounded-xl border border-line bg-surface/60 p-4 transition hover:border-brand/25"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="min-w-0 truncate text-sm font-semibold">{item.title}</p>
-                      <Pill tone={feedbackTone(result.decision)}>{FEEDBACK_LABEL[result.decision]}</Pill>
-                    </div>
-                    <p className="mt-2 text-[11px] font-semibold text-brand">จาก {result.from}</p>
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-ink-muted">{result.message}</p>
-                    <p className="mt-2 text-[11px] text-ink-faint">{result.at}</p>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </SectionCard>
-      </div>
+      </SectionCard>
 
       <SectionCard
         className="mt-6"

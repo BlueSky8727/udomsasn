@@ -9,6 +9,7 @@ export type NavItem = {
   roles: readonly UserRole[];
 };
 const ALL: readonly UserRole[] = [USER_ROLE.TEACHER, USER_ROLE.REVIEWER, USER_ROLE.ADMIN];
+const TEACHER: readonly UserRole[] = [USER_ROLE.TEACHER];
 const REVIEW: readonly UserRole[] = [USER_ROLE.REVIEWER, USER_ROLE.ADMIN];
 const ADMIN: readonly UserRole[] = [USER_ROLE.ADMIN];
 export const NAV_ITEMS: readonly NavItem[] = [
@@ -25,7 +26,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: 'สื่อของฉัน',
     description: 'งานส่งและเวอร์ชัน',
     icon: 'folder',
-    roles: ALL,
+    roles: TEACHER,
+  },
+  {
+    href: '/feedback',
+    label: 'ผลจากหัวหน้ากลุ่มสาระ',
+    description: 'ความเห็นจากหัวหน้ากลุ่มสาระ',
+    icon: 'message',
+    roles: TEACHER,
   },
   {
     href: '/queue',
@@ -56,6 +64,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
     roles: ADMIN,
   },
 ];
-export const PRIMARY_ACTION = { href: '/submit', label: 'สร้างสื่อใหม่', roles: ALL } as const;
+export const PRIMARY_ACTION = { href: '/submit', label: 'สร้างสื่อใหม่', roles: TEACHER } as const;
 export const navItemsForRole = (role: UserRole) => NAV_ITEMS.filter((i) => i.roles.includes(role));
 export const canSeePrimaryAction = (role: UserRole) => PRIMARY_ACTION.roles.includes(role);

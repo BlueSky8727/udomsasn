@@ -28,12 +28,19 @@ export function isTyphoonConfigured(): boolean {
 function cfg() {
   const key = process.env.TYPHOON_API_KEY;
   if (!key) throw new Error('TYPHOON_API_KEY is not configured');
+  const configuredTemperature = Number(process.env.TYPHOON_TEMPERATURE || 0.2);
+  const configuredMaxTokens = Number(process.env.TYPHOON_MAX_TOKENS || 1800);
+
   return {
     key,
     base: (process.env.TYPHOON_BASE_URL || 'https://api.opentyphoon.ai/v1').replace(/\/$/, ''),
     model: process.env.TYPHOON_MODEL || 'typhoon-v2.5-30b-a3b-instruct',
-    temperature: Number(process.env.TYPHOON_TEMPERATURE || 0.2),
-    maxTokens: Number(process.env.TYPHOON_MAX_TOKENS || 1800),
+    temperature: Number.isFinite(configuredTemperature)
+      ? Math.min(1, Math.max(0, configuredTemperature))
+      : 0.2,
+    maxTokens: Number.isFinite(configuredMaxTokens)
+      ? Math.min(4_000, Math.max(256, Math.trunc(configuredMaxTokens)))
+      : 1_800,
   };
 }
 export async function screenWithTyphoon(input: {
@@ -66,6 +73,7 @@ ${input.extractedText.slice(0, 45000)}
       response_format: { type: 'json_object' },
     }),
     cache: 'no-store',
+    signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`Typhoon API ${res.status}: ${(await res.text()).slice(0, 500)}`);
   const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };

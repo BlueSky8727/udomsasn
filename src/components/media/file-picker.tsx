@@ -9,6 +9,8 @@ import {
   formatBytes,
   isPreviewable,
   MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_FILES,
+  MAX_TOTAL_UPLOAD_BYTES,
   validateFile,
 } from '@/constants/upload';
 
@@ -45,8 +47,15 @@ export function FilePicker({ files, onChange }: FilePickerProps) {
 
     const accepted: File[] = [];
     const errors: string[] = [];
+    const existingBytes = files.reduce((total, file) => total + file.size, 0);
+    let acceptedBytes = 0;
 
     for (const file of Array.from(incoming)) {
+      if (files.length + accepted.length >= MAX_UPLOAD_FILES) {
+        errors.push(`เพิ่มได้ไม่เกิน ${MAX_UPLOAD_FILES} ไฟล์ต่อสื่อหนึ่งรายการ`);
+        break;
+      }
+
       const error = validateFile(file);
       if (error) {
         errors.push(`${file.name} — ${error}`);
@@ -59,7 +68,14 @@ export function FilePicker({ files, onChange }: FilePickerProps) {
         errors.push(`${file.name} — เลือกไฟล์นี้ไว้แล้ว`);
         continue;
       }
+      if (existingBytes + acceptedBytes + file.size > MAX_TOTAL_UPLOAD_BYTES) {
+        errors.push(
+          `${file.name} — ขนาดไฟล์รวมเกิน ${formatBytes(MAX_TOTAL_UPLOAD_BYTES)}`,
+        );
+        continue;
+      }
       accepted.push(file);
+      acceptedBytes += file.size;
     }
 
     setRejected(errors);
@@ -102,7 +118,7 @@ export function FilePicker({ files, onChange }: FilePickerProps) {
         <p className="mt-1.5 text-xs leading-5 text-ink-faint">
           รองรับไฟล์รูปภาพ PDF วิดีโอ และไฟล์เอกสาร
           <br />
-          ไม่เกิน {formatBytes(MAX_UPLOAD_BYTES)} ต่อไฟล์
+          ไม่เกิน {formatBytes(MAX_UPLOAD_BYTES)} ต่อไฟล์ · สูงสุด {MAX_UPLOAD_FILES} ไฟล์
         </p>
       </button>
 

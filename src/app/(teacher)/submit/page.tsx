@@ -1,9 +1,10 @@
 // src/app/(teacher)/submit/page.tsx
+import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/ui/app-shell';
 import { PageHeading } from '@/components/ui/page-heading';
 import { SubmitForm, type SubmitFormInitialMedia } from '@/components/media/submit-form';
 import { DEMO_MEDIA } from '@/constants/mock-data';
-import { MEDIA_STATUS, type MediaStatus } from '@/constants/workflow';
+import { MEDIA_STATUS, USER_ROLE, type MediaStatus } from '@/constants/workflow';
 import { getViewerName, getViewerRole } from '@/lib/auth';
 
 export default async function Submit({
@@ -16,6 +17,9 @@ export default async function Submit({
     getViewerName(),
     searchParams,
   ]);
+
+  if (role !== USER_ROLE.TEACHER) notFound();
+
   const mediaId = query.draft ?? query.revise;
   const requestedStatuses: readonly MediaStatus[] = query.revise
     ? [MEDIA_STATUS.REVISION, MEDIA_STATUS.ACADEMIC_REVISION]

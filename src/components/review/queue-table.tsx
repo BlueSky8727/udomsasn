@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Pill } from '@/components/ui/enterprise';
+import { Pill, TimeBadge } from '@/components/ui/enterprise';
 import { Icon } from '@/components/ui/icons';
 import type { ReviewJob } from '@/constants/enterprise-data';
 import { MEDIA_STATUS, STATUS_LABELS } from '@/constants/workflow';
@@ -111,7 +111,9 @@ export function QueueTable({ jobs }: { jobs: readonly ReviewJob[] }) {
                   <td>
                     <Pill>{STATUS_LABELS[job.status]}</Pill>
                   </td>
-                  <td className="text-xs text-ink-muted">{job.age}</td>
+                  <td>
+                    <TimeBadge>{job.age}</TimeBadge>
+                  </td>
                   <td>
                     <Link
                       href={`/review/${job.id}`}

@@ -4,7 +4,13 @@ import { AppShell } from '@/components/ui/app-shell';
 import { Icon } from '@/components/ui/icons';
 import { Pill, SectionCard } from '@/components/ui/enterprise';
 import { DEMO_MEDIA, type DemoFeedback } from '@/constants/mock-data';
-import { MEDIA_STATUS, STATUS_DESCRIPTIONS, STATUS_LABELS } from '@/constants/workflow';
+import { REVIEW_TOPICS } from '@/constants/review-topics';
+import {
+  MEDIA_STATUS,
+  STATUS_DESCRIPTIONS,
+  STATUS_LABELS,
+  USER_ROLE,
+} from '@/constants/workflow';
 import { getViewerName, getViewerRole } from '@/lib/auth';
 
 type StepState = 'waiting' | 'active' | 'done' | 'stopped';
@@ -26,6 +32,9 @@ const FEEDBACK_LABEL: Record<DemoFeedback['decision'], string> = {
 export default async function MyMediaDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [role, viewer] = await Promise.all([getViewerRole(), getViewerName()]);
+
+  if (role !== USER_ROLE.TEACHER) notFound();
+
   const media = DEMO_MEDIA.find((item) => item.id === id);
 
   // เปิดได้เฉพาะเจ้าของ ถ้าไม่ใช่ให้ตอบ 404 เพื่อไม่เปิดเผยว่ารหัสสื่อนี้มีอยู่จริง
@@ -41,6 +50,12 @@ export default async function MyMediaDetail({ params }: { params: Promise<{ id: 
     media.status === MEDIA_STATUS.ACADEMIC_REVISION ||
     media.status === MEDIA_STATUS.APPROVED;
   const approved = media.status === MEDIA_STATUS.APPROVED;
+  const topicReviews = REVIEW_TOPICS.map((topic) => {
+    const comment = media.feedback?.topicComments?.[topic.id]?.trim();
+    const result =
+      media.feedback?.topicResults?.[topic.id] ?? (comment ? 'NEEDS_WORK' : 'PASS');
+    return { ...topic, comment, result };
+  });
 
   const steps: Array<{ title: string; detail: string; state: StepState }> = [
     {
@@ -131,7 +146,10 @@ export default async function MyMediaDetail({ params }: { params: Promise<{ id: 
       </SectionCard>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_.95fr]">
-        <SectionCard title="ผลการตรวจส่งกลับ" description="ผลทุกครั้งต้องระบุผู้ส่งและเหตุผลเพื่อย้อนดูได้">
+        <SectionCard
+          title="ผลการตรวจส่งกลับ"
+          description="แสดงคอมเมนต์แยกตามหัวข้อ เพื่อให้รู้ว่าต้องแก้ส่วนไหนและแก้อะไร"
+        >
           {media.feedback ? (
             <div className="rounded-xl border border-line bg-surface/70 p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -151,7 +169,63 @@ export default async function MyMediaDetail({ params }: { params: Promise<{ id: 
                   {FEEDBACK_LABEL[media.feedback.decision]}
                 </Pill>
               </div>
-              <p className="mt-4 text-sm leading-7 text-ink-muted">{media.feedback.message}</p>
+              <div className="mt-4 rounded-lg bg-panel p-4">
+                <p className="text-[11px] font-semibold text-ink-faint">สรุปผลตรวจ</p>
+                <p className="mt-1 text-sm leading-7 text-ink-muted">{media.feedback.message}</p>
+              </div>
+
+              <div className="mt-5 border-t border-line/70 pt-5">
+                <p className="text-xs font-bold text-ink">
+                  ผลตรวจครบ {topicReviews.length} หัวข้อที่ส่งมา
+                </p>
+                <p className="mt-1 text-[11px] text-ink-faint">
+                  เปรียบเทียบหัวข้อในแบบฟอร์มกับผลตอบกลับของผู้ตรวจ
+                </p>
+                <div className="mt-3 space-y-3">
+                  {topicReviews.map((topic, index) => {
+                    const needsWork = topic.result === 'NEEDS_WORK';
+                    return (
+                      <div
+                        key={topic.id}
+                        className={`rounded-xl border p-4 ${
+                          needsWork
+                            ? 'border-status-revision/30 bg-status-revision/5'
+                            : 'border-status-approved/25 bg-status-approved/5'
+                        }`}
+                      >
+                        <div className="grid gap-4 md:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)]">
+                          <div className="flex gap-3">
+                            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand/10 text-xs font-bold text-brand">
+                              {index + 1}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-semibold text-ink-faint">
+                                หัวข้อที่ส่งในแบบฟอร์ม
+                              </p>
+                              <p className="mt-1 text-sm font-bold text-ink">{topic.title}</p>
+                              <p className="mt-1 text-[11px] leading-5 text-ink-faint">
+                                {topic.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="rounded-lg bg-panel/80 p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-[10px] font-semibold text-ink-faint">ผลตอบกลับ</p>
+                              <Pill tone={needsWork ? 'warn' : 'ok'}>
+                                {needsWork ? 'ต้องแก้ไข' : 'ผ่าน'}
+                              </Pill>
+                            </div>
+                            <p className="mt-2 text-xs leading-6 text-ink-muted">
+                              {topic.comment ?? 'ตรวจผ่านแล้ว ไม่มีจุดที่ต้องแก้ไขในหัวข้อนี้'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
               <p className="mt-3 text-[11px] text-ink-faint">{media.feedback.at}</p>
             </div>
           ) : (

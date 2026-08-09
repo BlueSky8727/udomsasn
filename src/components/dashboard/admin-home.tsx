@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Metric, Pill, SectionCard } from '@/components/ui/enterprise';
+import { Metric, Pill, SectionCard, TimeBadge } from '@/components/ui/enterprise';
 import { Icon, type IconName } from '@/components/ui/icons';
 import type { ReviewJob } from '@/constants/enterprise-data';
 import { MEDIA_STATUS } from '@/constants/workflow';
@@ -135,9 +135,12 @@ export function AdminHome({
                   <p className="mt-1 text-xs text-ink-muted">
                     {job.owner} · {job.department}
                   </p>
-                  <p className="mt-1 text-[11px] text-ink-faint">
-                    {job.id} · {job.grade} · v{job.version} · ส่งต่อมาเมื่อ {job.age}
-                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <p className="text-[11px] text-ink-faint">
+                      {job.id} · {job.grade} · v{job.version}
+                    </p>
+                    <TimeBadge>ส่งต่อมาเมื่อ {job.age}</TimeBadge>
+                  </div>
                 </div>
                 <div className="flex shrink-0 items-center justify-between gap-3 sm:flex-col sm:items-end">
                   <Pill

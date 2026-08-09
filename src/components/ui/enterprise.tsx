@@ -72,3 +72,13 @@ export function Pill({
     </span>
   );
 }
+
+/** ป้ายข้อมูลเวลาแบบพื้นเหลืองทึบ แยกจากป้ายสถานะเพื่อให้อ่านง่าย */
+export function TimeBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-status-pending bg-status-pending px-2 py-1 text-[11px] font-semibold leading-none text-slate-950 shadow-sm">
+      <Icon name="clock" className="size-3 text-slate-950" />
+      {children}
+    </span>
+  );
+}

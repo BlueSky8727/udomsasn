@@ -1,5 +1,6 @@
 // src/constants/mock-data.ts
 import { MEDIA_STATUS, type MediaStatus } from './workflow';
+import type { ReviewTopicId } from './review-topics';
 
 export type ReviewStage = 'SUBJECT_GROUP' | 'ACADEMIC';
 
@@ -8,6 +9,10 @@ export type DemoFeedback = {
   from: string;
   decision: 'REVISION' | 'MINOR_REVISION' | 'REJECTED' | 'APPROVED';
   message: string;
+  /** คอมเมนต์ที่ผู้ตรวจเขียนแยกตามหัวข้อในแบบฟอร์ม */
+  topicComments?: Partial<Record<ReviewTopicId, string>>;
+  /** ผลตรวจครบทุกหัวข้อที่อาจารย์ส่งมา */
+  topicResults?: Partial<Record<ReviewTopicId, 'PASS' | 'NEEDS_WORK'>>;
   at: string;
 };
 
@@ -65,6 +70,13 @@ export const DEMO_MEDIA: DemoMedia[] = [
       from: 'หัวหน้าวิชาการ',
       decision: 'APPROVED',
       message: 'ผ่านการอนุมัติขั้นสุดท้ายแล้ว สื่อถูกเผยแพร่เข้าคลังเรียบร้อย',
+      topicResults: {
+        learning_objectives: 'PASS',
+        learning_content: 'PASS',
+        learning_process: 'PASS',
+        assessment: 'PASS',
+        supporting_media: 'PASS',
+      },
       at: 'วันนี้ 09:05',
     },
   },
@@ -102,6 +114,17 @@ export const DEMO_MEDIA: DemoMedia[] = [
       from: 'หัวหน้ากลุ่มสาระภาษาไทย',
       decision: 'REVISION',
       message: 'กรุณาเพิ่มเกณฑ์ประเมินข้อ 2 และระบุแหล่งที่มาของเรื่องสั้นให้ชัดเจน',
+      topicComments: {
+        assessment: 'เพิ่มเกณฑ์ประเมินข้อ 2 พร้อมระบุเกณฑ์ผ่านให้ชัดเจน',
+        supporting_media: 'ระบุแหล่งที่มาของเรื่องสั้นและสิทธิ์การนำมาใช้ประกอบการสอน',
+      },
+      topicResults: {
+        learning_objectives: 'PASS',
+        learning_content: 'PASS',
+        learning_process: 'PASS',
+        assessment: 'NEEDS_WORK',
+        supporting_media: 'NEEDS_WORK',
+      },
       at: '6 ส.ค. 2569 · 14:30',
     },
   },
@@ -124,6 +147,17 @@ export const DEMO_MEDIA: DemoMedia[] = [
       from: 'หัวหน้าวิชาการ',
       decision: 'MINOR_REVISION',
       message: 'เนื้อหาผ่านแล้ว กรุณาขยายตัวอักษรหน้า 12 และแก้คำสะกดหน้า 18 ก่อนส่งกลับมาตรวจอีกครั้ง',
+      topicComments: {
+        learning_content: 'เนื้อหาถูกต้องและผ่านการตรวจแล้ว ไม่ต้องแก้ไขส่วนนี้',
+        supporting_media: 'ขยายขนาดตัวอักษรหน้า 12 และแก้คำสะกดหน้า 18 ก่อนส่งกลับมาตรวจอีกครั้ง',
+      },
+      topicResults: {
+        learning_objectives: 'PASS',
+        learning_content: 'PASS',
+        learning_process: 'PASS',
+        assessment: 'PASS',
+        supporting_media: 'NEEDS_WORK',
+      },
       at: '6 ส.ค. 2569 · 16:10',
     },
   },
@@ -146,6 +180,17 @@ export const DEMO_MEDIA: DemoMedia[] = [
       from: 'หัวหน้ากลุ่มสาระภาษาต่างประเทศ',
       decision: 'REJECTED',
       message: 'ไม่ผ่าน เนื่องจากไฟล์แนบไม่มีเฉลยและยังไม่ระบุสิทธิ์การใช้ภาพประกอบ',
+      topicComments: {
+        assessment: 'เพิ่มเฉลยแบบฝึกหัดให้ครบทุกข้อ เพื่อให้อาจารย์ตรวจคำตอบได้',
+        supporting_media: 'ระบุแหล่งที่มาและสิทธิ์การใช้ภาพประกอบทุกภาพในไฟล์แนบ',
+      },
+      topicResults: {
+        learning_objectives: 'PASS',
+        learning_content: 'PASS',
+        learning_process: 'PASS',
+        assessment: 'NEEDS_WORK',
+        supporting_media: 'NEEDS_WORK',
+      },
       at: '5 ส.ค. 2569 · 11:10',
     },
   },

@@ -8,6 +8,7 @@ import { LogoutButton } from '@/components/auth/logout-button';
 import { canSeePrimaryAction, navItemsForRole, PRIMARY_ACTION } from '@/constants/navigation';
 import { ROLE_LABELS, type UserRole } from '@/constants/workflow';
 import { Icon } from './icons';
+import { SchoolLogo } from './school-logo';
 import { ThemeToggle } from './theme-toggle';
 
 export function AppShell({ role, children }: { role: UserRole; children: ReactNode }) {
@@ -19,9 +20,7 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
   const sidebar = (
     <div className="flex h-full min-h-0 flex-col px-4 py-4">
       <Link href="/" className="group flex shrink-0 items-center gap-3 rounded-xl px-2 py-1.5">
-        <span className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-brand to-brand-strong text-brand-contrast shadow-lg shadow-brand/15">
-          <Icon name="sparkles" className="size-5" />
-        </span>
+        <SchoolLogo className="size-12" />
         <div className="min-w-0">
           <p className="truncate text-sm font-bold tracking-[-0.02em] text-ink">Udomsasn Media</p>
           <p className="text-[11px] text-ink-faint">Teaching Library</p>
@@ -32,7 +31,7 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
         <Link
           href={PRIMARY_ACTION.href}
           onClick={() => setMobileOpen(false)}
-          className="mt-5 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-brand-contrast shadow-lg shadow-brand/15 transition-all hover:-translate-y-0.5 hover:bg-brand-strong hover:shadow-xl"
+          className="mt-5 flex shrink-0 items-center justify-center gap-2 rounded-xl border border-brand-strong/20 bg-brand px-4 py-3 text-sm font-semibold text-brand-contrast transition-colors hover:bg-brand-strong"
         >
           <Icon name="upload" className="size-4" />
           {PRIMARY_ACTION.label}
@@ -123,12 +122,14 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
             <Icon name="menu" className="size-5" />
           </button>
           <div className="ml-auto flex items-center gap-2">
-            <button className="grid size-9 place-items-center rounded-xl border border-line/80 bg-panel/60 text-ink-muted transition hover:text-brand">
+            <Link
+              href="/notifications"
+              aria-label="เปิดการแจ้งเตือน"
+              title="การแจ้งเตือน"
+              className="grid size-9 place-items-center rounded-xl border border-line/80 bg-panel/60 text-ink-muted transition-colors hover:border-brand/30 hover:text-brand"
+            >
               <Icon name="bell" className="size-[18px]" />
-            </button>
-            <span className="hidden rounded-full border border-brand/15 bg-brand/8 px-3 py-1.5 text-xs font-medium text-brand md:block">
-              ระบบพร้อมใช้งาน
-            </span>
+            </Link>
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1460px] px-4 py-7 sm:px-6 lg:px-8 lg:py-9">

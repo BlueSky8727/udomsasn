@@ -1,10 +1,14 @@
 // src/app/analytics/page.tsx
+import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/ui/app-shell';
 import { PageHeading } from '@/components/ui/page-heading';
 import { Metric, SectionCard } from '@/components/ui/enterprise';
+import { USER_ROLE } from '@/constants/workflow';
 import { getViewerRole } from '@/lib/auth';
 export default async function Analytics() {
   const role = await getViewerRole();
+  if (role !== USER_ROLE.REVIEWER && role !== USER_ROLE.ADMIN) notFound();
+
   return (
     <AppShell role={role}>
       <PageHeading

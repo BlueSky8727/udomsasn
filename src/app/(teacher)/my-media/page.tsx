@@ -1,10 +1,11 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/ui/app-shell';
 import { PageHeading } from '@/components/ui/page-heading';
 import { Metric, Pill, SectionCard } from '@/components/ui/enterprise';
 import { Icon } from '@/components/ui/icons';
 import { DEMO_MEDIA, type DemoFeedback } from '@/constants/mock-data';
-import { MEDIA_STATUS, STATUS_LABELS } from '@/constants/workflow';
+import { MEDIA_STATUS, STATUS_LABELS, USER_ROLE } from '@/constants/workflow';
 import { getViewerName, getViewerRole } from '@/lib/auth';
 
 const FEEDBACK_LABEL: Record<DemoFeedback['decision'], string> = {
@@ -57,6 +58,9 @@ export default async function MyMedia({
     getViewerRole(),
     getViewerName(),
   ]);
+
+  if (role !== USER_ROLE.TEACHER) notFound();
+
   const requestedView = typeof rawView === 'string' ? rawView : 'all';
   const view: MediaView = MEDIA_VIEWS.includes(requestedView as MediaView)
     ? (requestedView as MediaView)
