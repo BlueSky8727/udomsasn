@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { LogoutButton } from '@/components/auth/logout-button';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 import { canSeePrimaryAction, navItemsForRole, PRIMARY_ACTION } from '@/constants/navigation';
 import { ROLE_LABELS, type UserRole } from '@/constants/workflow';
 import { Icon } from './icons';
@@ -122,14 +123,7 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
             <Icon name="menu" className="size-5" />
           </button>
           <div className="ml-auto flex items-center gap-2">
-            <Link
-              href="/notifications"
-              aria-label="เปิดการแจ้งเตือน"
-              title="การแจ้งเตือน"
-              className="grid size-9 place-items-center rounded-xl border border-line/80 bg-panel/60 text-ink-muted transition-colors hover:border-brand/30 hover:text-brand"
-            >
-              <Icon name="bell" className="size-[18px]" />
-            </Link>
+            <NotificationBell role={role} />
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1460px] px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
