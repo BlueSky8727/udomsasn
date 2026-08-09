@@ -1,0 +1,209 @@
+// backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  TEACHER
+  REVIEWER
+  ADMIN
+}
+
+enum AccountStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+}
+
+enum MediaStatus {
+  DRAFT
+  PENDING
+  IN_REVIEW
+  ACADEMIC_REVIEW
+  REVISION
+  ACADEMIC_REVISION
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum ReviewStage {
+  SUBJECT_GROUP
+  ACADEMIC
+}
+
+enum ReviewDecision {
+  REVISION
+  MINOR_REVISION
+  REJECTED
+  APPROVED
+  FORWARD
+}
+
+enum ReviewResultValue {
+  PASS
+  NEEDS_WORK
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  passwordHash  String
+  name          String
+  role          UserRole      @default(TEACHER)
+  accountStatus AccountStatus @default(PENDING)
+  department    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  media         Media[]       @relation("MediaOwner")
+  assignedMedia Media[]       @relation("MediaAssignee")
+  reviews       Review[]
+  statusLogs    StatusLog[]
+  notifications Notification[]
+  downloads     Download[]
+}
+
+model Media {
+  id                 String       @id @default(cuid())
+  code               String       @unique
+  title              String
+  description        String       @db.Text
+  subject            String
+  subjectGroup       String
+  gradeLevel         String
+  mediaType          String
+  learningObjectives Json
+  assessments        Json?
+  learningProcess    String?      @db.Text
+  license            String?
+  tags               String[]
+  attachmentNote     String?      @db.Text
+  status             MediaStatus  @default(DRAFT)
+  reviewStage        ReviewStage?
+  version            Int          @default(1)
+  aiRisk             String       @default("ต่ำ")
+  downloadCount      Int          @default(0)
+  ownerId            String
+  assigneeId         String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  owner      User           @relation("MediaOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  assignee   User?          @relation("MediaAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  files      MediaFile[]
+  versions   MediaVersion[]
+  reviews    Review[]
+  statusLogs StatusLog[]
+  downloads  Download[]
+
+  @@index([ownerId, status])
+  @@index([subjectGroup, status])
+  @@index([status, updatedAt])
+}
+
+model MediaFile {
+  id        String   @id @default(cuid())
+  mediaId   String
+  name      String
+  mimeType  String
+  size      Int
+  path      String
+  createdAt DateTime @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId])
+}
+
+model MediaVersion {
+  id        String   @id @default(cuid())
+  mediaId   String
+  version   Int
+  snapshot  Json
+  createdAt DateTime @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, version])
+}
+
+model Review {
+  id          String          @id @default(cuid())
+  mediaId     String
+  reviewerId  String
+  stage       ReviewStage
+  decision    ReviewDecision?
+  summary     String?         @db.Text
+  completedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  media    Media        @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  reviewer User         @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
+  items    ReviewItem[]
+
+  @@index([mediaId, stage])
+  @@index([reviewerId, stage])
+}
+
+model ReviewItem {
+  id       String             @id @default(cuid())
+  reviewId String
+  topicId  String
+  result   ReviewResultValue?
+  comment  String?            @db.Text
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, topicId])
+}
+
+model StatusLog {
+  id         String      @id @default(cuid())
+  mediaId    String
+  actorId    String
+  fromStatus MediaStatus
+  toStatus   MediaStatus
+  reason     String?     @db.Text
+  createdAt  DateTime    @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  actor User  @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([mediaId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String   @db.Text
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+model Download {
+  id        String   @id @default(cuid())
+  mediaId   String
+  userId    String?
+  createdAt DateTime @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([mediaId, createdAt])
+  @@index([userId, createdAt])
+}

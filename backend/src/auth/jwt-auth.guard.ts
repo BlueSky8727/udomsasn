@@ -1,0 +1,3 @@
+// backend/src/auth/jwt-auth.guard.ts
+import { CanActivate,ExecutionContext,Injectable,UnauthorizedException } from '@nestjs/common'; import { JwtService } from '@nestjs/jwt';
+@Injectable() export class JwtAuthGuard implements CanActivate{constructor(private jwt:JwtService){} async canActivate(c:ExecutionContext){const r=c.switchToHttp().getRequest(); const h=r.headers.authorization as string|undefined; const t=h?.startsWith('Bearer ')?h.slice(7):undefined; if(!t) throw new UnauthorizedException(); try{r.user=await this.jwt.verifyAsync(t,{secret:process.env.JWT_SECRET??'dev-secret-change-me'});return true}catch{throw new UnauthorizedException()}}}
