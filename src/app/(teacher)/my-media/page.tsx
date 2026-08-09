@@ -4,7 +4,8 @@ import { AppShell } from '@/components/ui/app-shell';
 import { PageHeading } from '@/components/ui/page-heading';
 import { Metric, Pill, SectionCard } from '@/components/ui/enterprise';
 import { Icon } from '@/components/ui/icons';
-import { DEMO_MEDIA, type DemoFeedback } from '@/constants/mock-data';
+import { type DemoFeedback } from '@/constants/mock-data';
+import { backendFetch, toDemoMedia } from '@/lib/backend';
 import { MEDIA_STATUS, STATUS_LABELS, USER_ROLE } from '@/constants/workflow';
 import { getViewerName, getViewerRole } from '@/lib/auth';
 
@@ -67,7 +68,8 @@ export default async function MyMedia({
     : 'all';
 
   // คัดเฉพาะของเจ้าของตั้งแต่ฝั่งเซิร์ฟเวอร์ ห้ามส่งข้อมูลของคนอื่นไปซ่อนในเบราว์เซอร์
-  const mine = DEMO_MEDIA.filter((media) => media.author === viewer);
+  let mine: ReturnType<typeof toDemoMedia>[] = [];
+  try { mine = (await backendFetch<any[]>('/media/mine')).map(toDemoMedia); } catch { mine = []; }
   const drafts = mine.filter((media) => media.status === MEDIA_STATUS.DRAFT);
   const submitted = mine.filter((media) => media.status !== MEDIA_STATUS.DRAFT);
   const underReview = mine.filter(

@@ -4,7 +4,7 @@ import { AdminHome } from '@/components/dashboard/admin-home';
 import { ReviewerHome } from '@/components/dashboard/reviewer-home';
 import { TeacherHome } from '@/components/dashboard/teacher-home';
 import { QA_STATS, REVIEW_JOBS, TIMELINE } from '@/constants/enterprise-data';
-import { DEMO_MEDIA } from '@/constants/mock-data';
+import { backendFetch, toDemoMedia, toReviewJob } from '@/lib/backend';
 import { USER_ROLE } from '@/constants/workflow';
 import { getViewerName, getViewerRole, getViewerSubjectGroup } from '@/lib/auth';
 
@@ -20,7 +20,8 @@ export default async function HomePage() {
 
   if (role === USER_ROLE.TEACHER) {
     const viewer = await getViewerName();
-    const mine = DEMO_MEDIA.filter((item) => item.author === viewer);
+    let mine: ReturnType<typeof toDemoMedia>[] = [];
+    try { mine = (await backendFetch<any[]>('/media/mine')).map(toDemoMedia); } catch { mine = []; }
     return (
       <AppShell role={role}>
         <TeacherHome name={viewer} media={mine} />
@@ -30,13 +31,8 @@ export default async function HomePage() {
 
   if (role === USER_ROLE.REVIEWER) {
     const subjectGroup = await getViewerSubjectGroup();
-    const subjectJobs = subjectGroup
-      ? REVIEW_JOBS.filter(
-          (job) =>
-            job.department === subjectGroup &&
-            (job.status === 'PENDING' || job.status === 'IN_REVIEW'),
-        )
-      : [];
+    let subjectJobs: ReturnType<typeof toReviewJob>[] = [];
+    try { subjectJobs = (await backendFetch<any[]>('/media/queue')).map(toReviewJob); } catch { subjectJobs = []; }
     return (
       <AppShell role={role}>
         <ReviewerHome subjectGroup={subjectGroup} jobs={subjectJobs} />
