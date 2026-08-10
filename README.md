@@ -1,13 +1,54 @@
-# Udomsasn Media QA — V2 Enterprise
+# Udomsasn Media QA
 
-ระบบคลังสื่อการสอนพร้อมขั้นตอนตรวจสองชั้น ระบบเวอร์ชัน ประวัติการทำรายการ Supabase และผู้ช่วย Typhoon
+ระบบคลังสื่อการสอนและกระบวนการตรวจสองชั้นสำหรับอาจารย์ หัวหน้ากลุ่มสาระ และหัวหน้าวิชาการ
 
-## Run
-1. ใช้ Node 22+: `nvm install 22 && nvm use 22`
-2. `cp .env.example .env.local` แล้วใส่ Supabase และ Typhoon keys
-3. `npm install`
-4. รัน migration ใน `supabase/migrations/202608070001_enterprise_media_qa.sql`
-5. `npm run dev`
+## เทคโนโลยี
 
-## AI safety
-Typhoon เป็นผู้ช่วยสรุปและชี้จุดที่ควรตรวจเท่านั้น API `/api/ai/review` คืน `canChangeStatus:false`; มนุษย์เป็นผู้ตัดสินเสมอ และ API key อยู่ฝั่ง server เท่านั้น
+- Frontend: Next.js 16, React 19, TypeScript
+- Backend: NestJS, Prisma, PostgreSQL
+- AI assistant: OpenTyphoon (ปิดได้ด้วย `AI_CHECK_ENABLED=false`)
+- Authentication: JWT เก็บใน HttpOnly cookie ฝั่ง Next.js
+
+## เริ่มใช้งาน
+
+ต้องใช้ Node.js 22+ และ PostgreSQL
+
+1. คัดลอก `backend/.env.example` เป็น `backend/.env` แล้วตั้ง `DATABASE_URL` และ `JWT_SECRET` อย่างน้อย 32 ตัวอักษร
+2. คัดลอก `.env.example` เป็น `.env.local`
+3. ติดตั้งและเตรียมฐานข้อมูล:
+
+```bash
+cd backend
+npm ci
+npm run prisma:generate
+npm run prisma:deploy
+npm run prisma:seed
+npm run dev
+```
+
+4. เปิด terminal อีกหน้าที่โฟลเดอร์หลัก:
+
+```bash
+npm ci
+npm run dev
+```
+
+Frontend อยู่ที่ `http://localhost:3000` และ Backend อยู่ที่ `http://localhost:4000/api`
+
+บัญชีตัวอย่างใช้รหัสผ่าน `Udomsasn@2026`:
+
+- `teacher@udomsasn.ac.th`
+- `reviewer@udomsasn.ac.th`
+- `admin@udomsasn.ac.th`
+
+## ตรวจสอบคุณภาพ
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+cd backend && npm run build
+```
+
+ไฟล์สื่ออยู่ใน private upload directory และดาวน์โหลดผ่าน API ที่ตรวจสิทธิ์ทุกครั้ง ผล AI เก็บแยกใน `AiReview` และไม่มีสิทธิ์เปลี่ยนสถานะสื่อ

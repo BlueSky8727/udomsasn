@@ -43,7 +43,7 @@
   --status-archived: oklch(0.64 0.03 265);
 }
 @theme inline {
-  --font-sans: var(--font-thai), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Sarabun", "Noto Sans Thai", Tahoma, ui-sans-serif, system-ui, sans-serif;
   --color-surface: var(--surface);
   --color-panel: var(--panel);
   --color-panel-hover: var(--panel-hover);

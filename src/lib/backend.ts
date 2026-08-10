@@ -1,7 +1,90 @@
-// src/lib/backend.ts
 import { cookies } from 'next/headers';
-export const BACKEND_URL=process.env.NEXT_PUBLIC_BACKEND_URL??'http://localhost:4000/api';
-export const ACCESS_TOKEN_COOKIE='udomsasn_access_token';
-export async function backendFetch<T>(path:string,init:RequestInit={}):Promise<T>{const store=await cookies();const token=store.get(ACCESS_TOKEN_COOKIE)?.value;const res=await fetch(`${BACKEND_URL}${path}`,{...init,headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{ }),...(init.headers??{})},cache:'no-store'});if(!res.ok)throw new Error(await res.text());return res.json() as Promise<T>}
-export function toDemoMedia(m:any){return{id:m.id,title:m.title,subject:m.subject,subjectGroup:m.subjectGroup,grade:m.gradeLevel,type:m.mediaType,author:m.owner?.name??'',updated:new Date(m.updatedAt).toLocaleDateString('th-TH'),status:m.status,downloads:m.downloadCount??0,tags:m.tags??[],accent:'bg-brand',reviewStage:m.reviewStage,feedback:m.reviews?.[0]?.decision?{fromRole:m.reviews[0].stage==='ACADEMIC'?'ACADEMIC_HEAD':'SUBJECT_HEAD',from:m.reviews[0].reviewer?.name??'',decision:m.reviews[0].decision==='FORWARD'?'APPROVED':m.reviews[0].decision,message:m.reviews[0].summary??'',topicComments:Object.fromEntries((m.reviews[0].items??[]).map((x:any)=>[x.topicId,x.comment])),topicResults:Object.fromEntries((m.reviews[0].items??[]).map((x:any)=>[x.topicId,x.result])),at:new Date(m.reviews[0].updatedAt??m.updatedAt).toLocaleString('th-TH')}:undefined}}
-export function toReviewJob(m:any){return{id:m.id,title:m.title,owner:m.owner?.name??'',subject:m.subject,department:m.subjectGroup,grade:m.gradeLevel,version:m.version,status:m.status,age:new Date(m.updatedAt).toLocaleString('th-TH'),aiRisk:m.aiRisk??'ต่ำ',assignee:m.assignee?.name}}
+import type { DemoFeedback, DemoMedia } from '@/constants/mock-data';
+import type { ReviewJob } from '@/constants/enterprise-data';
+import type { BackendMedia, BackendReview } from '@/types/backend';
+import { ACCESS_TOKEN_COOKIE } from '@/constants/auth';
+
+export const BACKEND_URL = process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000/api';
+export { ACCESS_TOKEN_COOKIE } from '@/constants/auth';
+
+export async function backendFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const store = await cookies();
+  const token = store.get(ACCESS_TOKEN_COOKIE)?.value;
+  const headers = new Headers(init.headers);
+  if (!(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  const response = await fetch(`${BACKEND_URL}${path}`, {
+    ...init,
+    headers,
+    cache: 'no-store',
+  });
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Backend request failed (${response.status})`);
+  }
+  return response.json() as Promise<T>;
+}
+
+function latestCompletedReview(reviews: BackendReview[]): BackendReview | undefined {
+  return reviews.find((review) => Boolean(review.decision)) ?? reviews[0];
+}
+
+export function toDemoMedia(media: BackendMedia): DemoMedia {
+  const review = latestCompletedReview(media.reviews ?? []);
+  let feedback: DemoFeedback | undefined;
+  if (review?.decision) {
+    const decision: DemoFeedback['decision'] =
+      review.decision === 'FORWARD' ? 'APPROVED' : review.decision;
+    feedback = {
+      fromRole: review.stage === 'ACADEMIC' ? 'ACADEMIC_HEAD' : 'SUBJECT_HEAD',
+      from: review.reviewer?.name ?? '',
+      decision,
+      message: review.summary ?? '',
+      topicComments: Object.fromEntries(
+        (review.items ?? []).map((item) => [item.topicId, item.comment ?? '']),
+      ),
+      topicResults: Object.fromEntries(
+        (review.items ?? [])
+          .filter((item) => item.result)
+          .map((item) => [item.topicId, item.result]),
+      ),
+      at: new Date(review.updatedAt ?? media.updatedAt).toLocaleString('th-TH'),
+    };
+  }
+
+  return {
+    id: media.id,
+    title: media.title,
+    subject: media.subject,
+    subjectGroup: media.subjectGroup,
+    grade: media.gradeLevel,
+    type: media.mediaType,
+    author: media.owner?.name ?? '',
+    updated: new Date(media.updatedAt).toLocaleDateString('th-TH'),
+    status: media.status,
+    downloads: media.downloadCount ?? 0,
+    tags: media.tags ?? [],
+    accent: 'bg-brand',
+    reviewStage: media.reviewStage ?? undefined,
+    feedback,
+  };
+}
+
+export function toReviewJob(media: BackendMedia): ReviewJob {
+  return {
+    id: media.id,
+    title: media.title,
+    owner: media.owner?.name ?? '',
+    subject: media.subject,
+    department: media.subjectGroup,
+    grade: media.gradeLevel,
+    version: media.version,
+    status: media.status,
+    age: new Date(media.updatedAt).toLocaleString('th-TH'),
+    aiRisk: media.aiRisk ?? 'ต่ำ',
+    assignee: media.assignee?.name,
+  };
+}

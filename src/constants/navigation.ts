@@ -8,18 +8,33 @@ export type NavItem = {
   icon: IconName;
   roles: readonly UserRole[];
 };
-const ALL: readonly UserRole[] = [USER_ROLE.TEACHER, USER_ROLE.REVIEWER, USER_ROLE.ADMIN];
+const EVERYONE: readonly UserRole[] = [
+  USER_ROLE.TEACHER,
+  USER_ROLE.REVIEWER,
+  USER_ROLE.ACADEMIC_HEAD,
+  USER_ROLE.ADMIN,
+];
+/**
+ * ผู้ดูแลระบบทำงานเรื่องบัญชีอย่างเดียว เมนูจึงเหลือแค่ภาพรวมกับหน้าสมาชิก
+ * ส่วนคลังสื่อและการแจ้งเตือนเป็นเรื่องของฝั่งที่ทำงานกับสื่อ
+ */
+const MEDIA_SIDE: readonly UserRole[] = [
+  USER_ROLE.TEACHER,
+  USER_ROLE.REVIEWER,
+  USER_ROLE.ACADEMIC_HEAD,
+];
 const TEACHER: readonly UserRole[] = [USER_ROLE.TEACHER];
-const REVIEW: readonly UserRole[] = [USER_ROLE.REVIEWER, USER_ROLE.ADMIN];
-const ADMIN: readonly UserRole[] = [USER_ROLE.ADMIN];
+const REVIEW: readonly UserRole[] = [USER_ROLE.REVIEWER, USER_ROLE.ACADEMIC_HEAD];
+/** หัวหน้าวิชาการเปิดหน้ารายชื่อได้ แต่เห็นแบบอ่านอย่างเดียว ตั้งตำแหน่งไม่ได้ */
+const MEMBER_LIST: readonly UserRole[] = [USER_ROLE.ADMIN, USER_ROLE.ACADEMIC_HEAD];
 export const NAV_ITEMS: readonly NavItem[] = [
-  { href: '/', label: 'ภาพรวม', description: 'Dashboard', icon: 'home', roles: ALL },
+  { href: '/', label: 'ภาพรวม', description: 'Dashboard', icon: 'home', roles: EVERYONE },
   {
     href: '/browse',
     label: 'คลังสื่อ',
     description: 'ค้นหาและนำสื่อไปใช้',
     icon: 'search',
-    roles: ALL,
+    roles: MEDIA_SIDE,
   },
   {
     href: '/my-media',
@@ -54,14 +69,14 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: 'การแจ้งเตือน',
     description: 'ความเคลื่อนไหวทั้งหมด',
     icon: 'bell',
-    roles: ALL,
+    roles: MEDIA_SIDE,
   },
   {
     href: '/admin',
-    label: 'จัดการระบบ',
-    description: 'ผู้ใช้ เกณฑ์ และการตั้งค่า',
-    icon: 'settings',
-    roles: ADMIN,
+    label: 'สมาชิกและตำแหน่ง',
+    description: 'รายชื่อบุคลากรและการแต่งตั้ง',
+    icon: 'users',
+    roles: MEMBER_LIST,
   },
 ];
 export const PRIMARY_ACTION = { href: '/submit', label: 'สร้างสื่อใหม่', roles: TEACHER } as const;

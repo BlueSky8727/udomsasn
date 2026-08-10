@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { REVIEW_JOBS } from '@/constants/enterprise-data';
 import { REVIEW_TOPICS } from '@/constants/review-topics';
 import { USER_ROLE } from '@/constants/workflow';
-import { getViewerRole, getViewerSubjectGroup } from '@/lib/auth';
+import { getViewer } from '@/lib/auth';
 import { chatWithTyphoon, isTyphoonConfigured } from '@/lib/ai/typhoon';
-import { canOpenReviewJob } from '@/lib/review-access';
+import { backendFetch } from '@/lib/backend';
+import type { BackendMedia } from '@/types/backend';
 import {
   isSameOriginRequest,
   readJsonBody,
@@ -59,13 +59,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ไม่อนุญาตคำขอจากเว็บไซต์อื่น' }, { status: 403 });
     }
 
-    const [role, subjectGroup] = await Promise.all([getViewerRole(), getViewerSubjectGroup()]);
+    const viewer = await getViewer();
+    if (!viewer) return NextResponse.json({ error: 'กรุณาเข้าสู่ระบบ' }, { status: 401 });
+    const role = viewer.role;
 
-    if (role !== USER_ROLE.REVIEWER && role !== USER_ROLE.ADMIN) {
+    if (role !== USER_ROLE.REVIEWER && role !== USER_ROLE.ACADEMIC_HEAD) {
       return NextResponse.json({ error: 'ไม่มีสิทธิ์ใช้ผู้ช่วยตรวจ AI' }, { status: 403 });
     }
 
-    const rateLimit = takeRateLimit(request, `ai-chat:${role}`, 30, 10 * 60 * 1_000);
+    const rateLimit = takeRateLimit(request, `ai-chat:${viewer.id}`, 30, 10 * 60 * 1_000);
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: 'ถามถี่เกินไป กรุณารอสักครู่แล้วลองใหม่' },
@@ -78,8 +80,8 @@ export async function POST(request: Request) {
 
     const body = ChatBody.parse(await readJsonBody(request, 128 * 1_024));
 
-    const job = REVIEW_JOBS.find((item) => item.id === body.jobId);
-    if (!job || !canOpenReviewJob(job, role, subjectGroup)) {
+    let media: BackendMedia;
+    try { media = await backendFetch<BackendMedia>(`/media/${body.jobId}`); } catch {
       return NextResponse.json({ error: 'ไม่พบงานตรวจที่เข้าถึงได้' }, { status: 404 });
     }
 
@@ -90,22 +92,23 @@ export async function POST(request: Request) {
       return `- ${topic.title}: ${resultLabel}; คอมเมนต์: ${comment}`;
     }).join('\n');
 
-    const reviewContext = `รหัสงาน: ${job.id}
-ชื่อสื่อ: ${job.title}
-เจ้าของ: ${job.owner}
-วิชา/กลุ่มสาระ: ${job.subject} / ${job.department}
-ระดับชั้น: ${job.grade}
-เวอร์ชัน: ${job.version}
-ความเสี่ยงจากการคัดกรองเบื้องต้น: ${job.aiRisk}
-ข้อสังเกต AI เดิม: ภาพประกอบหน้า 18 ควรยืนยันแหล่งที่มาและสิทธิ์การนำไปใช้
-${role === USER_ROLE.ADMIN ? 'ผลรอบกลุ่มสาระ: ตรวจครบทุกหัวข้อ ระบุแหล่งที่มาของภาพแล้ว และเสนอให้ปรับขนาดตัวอักษรหน้า 12' : ''}
+    const priorReview = media.reviews.find((review) => review.stage === 'SUBJECT_GROUP' && review.decision);
+    const reviewContext = `รหัสงาน: ${media.code}
+ชื่อสื่อ: ${media.title}
+เจ้าของ: ${media.owner.name}
+วิชา/กลุ่มสาระ: ${media.subject} / ${media.subjectGroup}
+ระดับชั้น: ${media.gradeLevel}
+เวอร์ชัน: ${media.version}
+ความเสี่ยงจากการคัดกรองเบื้องต้น: ${media.aiRisk}
+รายละเอียดสื่อ: ${media.description.slice(0, 6000)}
+${priorReview ? `ผลรอบกลุ่มสาระ: ${priorReview.summary ?? '-'}\n${priorReview.items.map((item) => `${item.topicId}: ${item.result ?? '-'} ${item.comment ?? ''}`).join('\n')}` : ''}
 
 สถานะร่างการตรวจปัจจุบัน:
 ${topicNotes}
 สรุปร่างของผู้ตรวจ: ${body.review.summary.trim() || '-'}`;
 
     const reviewerRole =
-      role === USER_ROLE.ADMIN ? ('หัวหน้าวิชาการ' as const) : ('หัวหน้ากลุ่มสาระ' as const);
+      role === USER_ROLE.ACADEMIC_HEAD ? ('หัวหน้าวิชาการ' as const) : ('หัวหน้ากลุ่มสาระ' as const);
 
     if (!isTyphoonConfigured()) {
       if (process.env.NODE_ENV === 'production') {
@@ -115,7 +118,7 @@ ${topicNotes}
       const question = body.messages.at(-1)?.content ?? '';
       return NextResponse.json({
         provider: 'preview',
-        answer: previewAnswer(question, role === USER_ROLE.ADMIN),
+        answer: previewAnswer(question, role === USER_ROLE.ACADEMIC_HEAD),
         canChangeStatus: false,
       });
     }
@@ -126,6 +129,10 @@ ${topicNotes}
       messages: body.messages,
     });
 
+    await backendFetch(`/media/${media.id}/ai-reviews`, {
+      method: 'POST',
+      body: JSON.stringify({ provider: 'typhoon-chat', result: { answer } }),
+    });
     return NextResponse.json({ provider: 'typhoon', answer, canChangeStatus: false });
   } catch (error) {
     if (error instanceof RequestSecurityError) {

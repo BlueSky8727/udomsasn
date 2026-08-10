@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/workflow.test.mjs tests/request-security.test.mjs tests/upload.test.mjs",
+    "test": "node --no-warnings --experimental-strip-types --test tests/workflow.test.mjs tests/request-security.test.mjs tests/upload.test.mjs tests/extraction.test.mjs",
     "db:types": "supabase gen types typescript --local > src/types/database.ts"
   },
   "dependencies": {

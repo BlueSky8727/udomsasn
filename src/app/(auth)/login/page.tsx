@@ -1,6 +1,6 @@
 // src/app/(auth)/login/page.tsx
 import Link from 'next/link';
-import { LoginForm } from '@/components/auth/login-form';
+import { AuthPanel } from '@/components/auth/auth-panel';
 import { Icon } from '@/components/ui/icons';
 import { SchoolLogo } from '@/components/ui/school-logo';
 
@@ -44,14 +44,7 @@ export default function LoginPage() {
               <strong>Udomsasn Media</strong>
             </Link>
           </div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
-            Welcome back
-          </p>
-          <h2 className="mt-2 text-3xl font-bold tracking-[-0.04em]">เข้าสู่ระบบ</h2>
-          <p className="mt-2 text-sm text-ink-muted">
-            ใช้บัญชีของหน่วยงานเพื่อเข้าใช้งานคลังสื่อการสอน
-          </p>
-          <LoginForm />
+          <AuthPanel />
         </div>
       </section>
     </main>

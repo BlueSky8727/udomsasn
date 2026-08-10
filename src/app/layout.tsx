@@ -1,14 +1,6 @@
 import type { Metadata } from 'next';
-import { Sarabun } from 'next/font/google';
 import './globals.css';
 import { DEFAULT_THEME, THEME_STORAGE_KEY } from '@/constants/theme';
-
-const sarabun = Sarabun({
-  subsets: ['thai', 'latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-  variable: '--font-thai',
-});
 
 export const metadata: Metadata = {
   title: 'คลังสื่อการสอน',
@@ -40,7 +32,7 @@ const themeScript = `
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="th" className={sarabun.variable} suppressHydrationWarning>
+    <html lang="th" suppressHydrationWarning>
       <body className="min-h-screen bg-surface font-sans text-ink">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {children}

@@ -9,8 +9,8 @@ import { signOut } from '@/lib/auth-client';
 /**
  * ปุ่มออกจากระบบใน sidebar
  *
- * ยังไม่มี session ให้ล้างจนกว่าจะเชื่อม Supabase Auth แต่ปลายทางเหมือนกันทั้งสองกรณี
- * คือกลับไปหน้าล็อกอิน เมื่อเชื่อมแล้วจึงไม่ต้องแก้อะไรที่นี่ แก้ที่ signOut() ที่เดียว
+ * signOut() เรียก `POST /api/auth/logout` เพื่อล้างคุกกี้ session ฝั่งเซิร์ฟเวอร์
+ * ตัวปุ่มไม่ต้องรู้กลไกเบื้องหลัง ถ้าเปลี่ยนวิธีจัดการ session ให้แก้ที่ signOut() ที่เดียว
  */
 export function LogoutButton({ onDone }: { onDone?: () => void }) {
   const router = useRouter();

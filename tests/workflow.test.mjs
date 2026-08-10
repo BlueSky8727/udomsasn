@@ -100,7 +100,7 @@ test('หัวหน้าวิชาการเท่านั้นที�
     checkTransition(
       MEDIA_STATUS.ACADEMIC_REVIEW,
       MEDIA_STATUS.APPROVED,
-      context({ actorRole: USER_ROLE.ADMIN }),
+      context({ actorRole: USER_ROLE.ACADEMIC_HEAD }),
     ).ok,
     true,
   );
@@ -111,6 +111,34 @@ test('หัวหน้าวิชาการเท่านั้นที�
       context({ actorRole: USER_ROLE.REVIEWER }),
     ).ok,
     false,
+  );
+});
+
+test('ผู้ดูแลระบบไม่มีสิทธิ์ในกระบวนการตรวจสื่อ', () => {
+  // ADMIN ดูแลบัญชีอย่างเดียว ห้ามอนุมัติหรือถอดสื่อออกจากคลัง
+  assert.equal(
+    checkTransition(
+      MEDIA_STATUS.ACADEMIC_REVIEW,
+      MEDIA_STATUS.APPROVED,
+      context({ actorRole: USER_ROLE.ADMIN }),
+    ).ok,
+    false,
+  );
+  assert.equal(
+    checkTransition(
+      MEDIA_STATUS.APPROVED,
+      MEDIA_STATUS.ARCHIVED,
+      context({ actorRole: USER_ROLE.ADMIN, reason: 'ถอดออก' }),
+    ).ok,
+    false,
+  );
+  assert.equal(
+    checkTransition(
+      MEDIA_STATUS.APPROVED,
+      MEDIA_STATUS.ARCHIVED,
+      context({ actorRole: USER_ROLE.ACADEMIC_HEAD, reason: 'ถอดออก' }),
+    ).ok,
+    true,
   );
 });
 

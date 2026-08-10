@@ -1,6 +1,7 @@
 // src/components/media/submit-form.tsx
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { FilePicker } from './file-picker';
 import { Icon } from '@/components/ui/icons';
@@ -59,6 +60,11 @@ export type SubmitFormInitialMedia = {
   subject: string;
   grade: string;
   status: MediaStatus;
+  description: string;
+  learningProcess: string;
+  attachmentNote: string;
+  mediaType: string;
+  existingFileCount: number;
 };
 
 const EMPTY_ASSESSMENT: Assessment = { indicator: '', criteria: '', passing: '' };
@@ -147,12 +153,17 @@ function DomainBadge({ code }: { code: LearningDomainCode }) {
 /* ฟอร์ม                                                               */
 /* ------------------------------------------------------------------ */
 
-export function SubmitForm({ initialMedia }: { initialMedia?: SubmitFormInitialMedia }) {
+export function SubmitForm({ initialMedia, viewerName }: { initialMedia?: SubmitFormInitialMedia; viewerName: string }) {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>(() => ({
     ...EMPTY_FORM,
     title: initialMedia?.title ?? '',
     subject: initialMedia?.subject ?? '',
     gradeLevel: initialMedia?.grade ?? '',
+    description: initialMedia?.description ?? '',
+    learningProcess: initialMedia?.learningProcess ?? '',
+    attachmentNote: initialMedia?.attachmentNote ?? '',
+    submitterName: viewerName,
     objectives: {
       K: [{ id: 'obj-K', text: '', assessment: { ...EMPTY_ASSESSMENT } }],
       P: [{ id: 'obj-P', text: '', assessment: { ...EMPTY_ASSESSMENT } }],
@@ -161,6 +172,7 @@ export function SubmitForm({ initialMedia }: { initialMedia?: SubmitFormInitialM
   }));
   const [files, setFiles] = useState<File[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -232,12 +244,62 @@ export function SubmitForm({ initialMedia }: { initialMedia?: SubmitFormInitialM
     actorId: 'preview-user',
     ownerId: 'preview-user',
     hasCompleteMetadata: missing.length === 0,
-    fileCount: files.length,
+    fileCount: (initialMedia?.existingFileCount ?? 0) + files.length,
   });
   const submitRule = getTransition(fromStatus, toStatus);
 
+  const persist = async (submit: boolean) => {
+    if (busy) return;
+    if (submit && !submitCheck.ok) {
+      setNotice(submitCheck.message);
+      return;
+    }
+    setBusy(true);
+    setNotice(null);
+    try {
+      const payload = {
+        title: form.title,
+        description: form.description,
+        subject: form.subject,
+        subjectGroup: form.subject,
+        gradeLevel: form.gradeLevel,
+        mediaType: initialMedia?.mediaType ?? 'เอกสาร',
+        learningObjectives: Object.fromEntries(
+          LEARNING_DOMAINS.map((domain) => [
+            domain.code,
+            form.objectives[domain.code].map((row) => row.text.trim()).filter(Boolean),
+          ]),
+        ),
+        assessments: Object.fromEntries(
+          LEARNING_DOMAINS.flatMap((domain) =>
+            form.objectives[domain.code].map((row) => [row.id, row.assessment]),
+          ),
+        ),
+        learningProcess: form.learningProcess,
+        attachmentNote: form.attachmentNote,
+        submit,
+      };
+      const body = new FormData();
+      body.set('metadata', JSON.stringify(payload));
+      files.forEach((file) => body.append('files', file));
+      const response = await fetch(
+        initialMedia ? `/api/backend/media/${initialMedia.id}` : '/api/backend/media',
+        { method: initialMedia ? 'PATCH' : 'POST', body },
+      );
+      const data = (await response.json()) as { id?: string; message?: string; error?: string };
+      if (!response.ok || !data.id) throw new Error(data.message ?? data.error ?? 'บันทึกไม่สำเร็จ');
+      setNotice(submit ? 'ส่งสื่อเข้ากระบวนการตรวจเรียบร้อยแล้ว' : 'บันทึกฉบับร่างเรียบร้อยแล้ว');
+      router.push(`/my-media/${data.id}`);
+      router.refresh();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'บันทึกไม่สำเร็จ');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <form onSubmit={(e) => e.preventDefault()}>
+    <form onSubmit={(event) => { event.preventDefault(); void persist(true); }}>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <h1 className="text-lg font-bold tracking-[-.02em]">
           {initialMedia
@@ -461,7 +523,8 @@ export function SubmitForm({ initialMedia }: { initialMedia?: SubmitFormInitialM
 
             <button
               type="button"
-              onClick={() => setNotice('โหมดพรีวิวยังไม่เชื่อมฐานข้อมูล จึงยังบันทึกร่างไม่ได้')}
+              disabled={busy}
+              onClick={() => void persist(false)}
               className="mt-4 w-full rounded-xl border border-line bg-surface py-2.5 text-sm font-medium text-ink-muted transition hover:bg-panel-hover"
             >
               บันทึกร่าง
@@ -469,16 +532,12 @@ export function SubmitForm({ initialMedia }: { initialMedia?: SubmitFormInitialM
 
             <button
               type="button"
-              disabled={!submitCheck.ok}
+              disabled={!submitCheck.ok || busy}
               title={submitCheck.ok ? submitRule?.description : submitCheck.message}
-              onClick={() =>
-                setNotice(
-                  `พร้อมส่งให้หัวหน้ากลุ่มสาระ${form.subject} (${files.length} ไฟล์) แต่โหมดพรีวิวยังไม่เชื่อมฐานข้อมูล`,
-                )
-              }
+              onClick={() => void persist(true)}
               className="mt-2 w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-brand-contrast transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-45"
             >
-              {submitRule?.label ?? 'ส่งให้ตรวจ'}
+              {busy ? 'กำลังบันทึก...' : (submitRule?.label ?? 'ส่งให้ตรวจ')}
             </button>
 
             {!submitCheck.ok && (

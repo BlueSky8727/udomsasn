@@ -12,11 +12,12 @@ import { Icon } from './icons';
 import { SchoolLogo } from './school-logo';
 import { ThemeToggle } from './theme-toggle';
 
-export function AppShell({ role, children }: { role: UserRole; children: ReactNode }) {
+export function AppShell({ role, children, viewerName }: { role: UserRole; children: ReactNode; viewerName?: string }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const items = navItemsForRole(role);
-  const avatarLabel = role === 'TEACHER' ? 'อจ' : role === 'REVIEWER' ? 'ผต' : 'AD';
+  const avatarLabel =
+    role === 'TEACHER' ? 'อจ' : role === 'REVIEWER' ? 'ผต' : role === 'ACADEMIC_HEAD' ? 'วก' : 'AD';
 
   const sidebar = (
     <div className="flex h-full min-h-0 flex-col px-4 py-4">
@@ -84,8 +85,8 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
             {avatarLabel}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold text-ink">{ROLE_LABELS[role]}</p>
-            <p className="truncate text-[10px] text-ink-faint">บัญชีตัวอย่าง · Preview</p>
+            <p className="truncate text-xs font-semibold text-ink">{viewerName ?? ROLE_LABELS[role]}</p>
+            <p className="truncate text-[10px] text-ink-faint">{ROLE_LABELS[role]}</p>
           </div>
           <Icon
             name="chevronRight"
@@ -123,7 +124,8 @@ export function AppShell({ role, children }: { role: UserRole; children: ReactNo
             <Icon name="menu" className="size-5" />
           </button>
           <div className="ml-auto flex items-center gap-2">
-            <NotificationBell role={role} />
+            {/* ผู้ดูแลระบบไม่มีส่วนในกระบวนการตรวจสื่อ จึงไม่มีการแจ้งเตือนให้ติดตาม */}
+            {role !== 'ADMIN' && <NotificationBell role={role} />}
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1460px] px-4 py-7 sm:px-6 lg:px-8 lg:py-9">

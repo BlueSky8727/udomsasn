@@ -7,7 +7,8 @@ import { Icon } from '@/components/ui/icons';
 import { type DemoFeedback } from '@/constants/mock-data';
 import { backendFetch, toDemoMedia } from '@/lib/backend';
 import { MEDIA_STATUS, STATUS_LABELS, USER_ROLE } from '@/constants/workflow';
-import { getViewerName, getViewerRole } from '@/lib/auth';
+import { getViewerRole } from '@/lib/auth';
+import type { BackendMedia } from '@/types/backend';
 
 const FEEDBACK_LABEL: Record<DemoFeedback['decision'], string> = {
   REVISION: 'ให้แก้ไข',
@@ -54,10 +55,9 @@ export default async function MyMedia({
 }: {
   searchParams: Promise<{ view?: string | string[] }>;
 }) {
-  const [{ view: rawView }, role, viewer] = await Promise.all([
+  const [{ view: rawView }, role] = await Promise.all([
     searchParams,
     getViewerRole(),
-    getViewerName(),
   ]);
 
   if (role !== USER_ROLE.TEACHER) notFound();
@@ -69,7 +69,7 @@ export default async function MyMedia({
 
   // คัดเฉพาะของเจ้าของตั้งแต่ฝั่งเซิร์ฟเวอร์ ห้ามส่งข้อมูลของคนอื่นไปซ่อนในเบราว์เซอร์
   let mine: ReturnType<typeof toDemoMedia>[] = [];
-  try { mine = (await backendFetch<any[]>('/media/mine')).map(toDemoMedia); } catch { mine = []; }
+  try { mine = (await backendFetch<BackendMedia[]>('/media/mine')).map(toDemoMedia); } catch { mine = []; }
   const drafts = mine.filter((media) => media.status === MEDIA_STATUS.DRAFT);
   const submitted = mine.filter((media) => media.status !== MEDIA_STATUS.DRAFT);
   const underReview = mine.filter(

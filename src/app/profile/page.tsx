@@ -18,10 +18,15 @@ const ROLE_ACCESS: Record<UserRole, readonly string[]> = {
     'คอมเมนต์แยกตามหัวข้อและส่งกลับแก้ไข',
     'ส่งสื่อที่ตรวจแล้วต่อให้หัวหน้าวิชาการ',
   ],
-  [USER_ROLE.ADMIN]: [
+  [USER_ROLE.ACADEMIC_HEAD]: [
     'ตรวจและอนุมัติสื่อขั้นสุดท้าย',
     'ส่งสื่อกลับให้อาจารย์แก้ไขพร้อมคอมเมนต์',
-    'แต่งตั้งหัวหน้ากลุ่มสาระและกำหนดกลุ่มสาระรับผิดชอบ',
+    'ดูรายชื่อบุคลากรและตำแหน่งได้ แต่ตั้งตำแหน่งไม่ได้',
+  ],
+  [USER_ROLE.ADMIN]: [
+    'ดูรายชื่อผู้สมัครและบุคลากรทั้งหมด',
+    'แต่งตั้งตำแหน่งและกำหนดกลุ่มสาระรับผิดชอบ',
+    'เปิดหรือปิดการใช้งานบัญชี',
   ],
 };
 
@@ -54,20 +59,29 @@ export default async function ProfilePage() {
     getViewerSubjectGroup(),
   ]);
 
-  const avatarLabel = role === USER_ROLE.TEACHER ? 'อจ' : role === USER_ROLE.REVIEWER ? 'ผต' : 'AD';
+  const avatarLabel =
+    role === USER_ROLE.TEACHER
+      ? 'อจ'
+      : role === USER_ROLE.REVIEWER
+        ? 'ผต'
+        : role === USER_ROLE.ACADEMIC_HEAD
+          ? 'วก'
+          : 'AD';
   const responsibility =
     role === USER_ROLE.REVIEWER
       ? subjectGroup ?? 'ยังไม่ได้กำหนดกลุ่มสาระ'
-      : role === USER_ROLE.ADMIN
+      : role === USER_ROLE.ACADEMIC_HEAD
         ? 'ดูแลทุกกลุ่มสาระ'
-        : 'เลือกกลุ่มสาระปลายทางเมื่อส่งสื่อ';
+        : role === USER_ROLE.ADMIN
+          ? 'ดูแลบัญชีผู้ใช้ทั้งระบบ'
+          : 'เลือกกลุ่มสาระปลายทางเมื่อส่งสื่อ';
 
   return (
     <AppShell role={role}>
       <PageHeading
         eyebrow="My Profile"
         title="ข้อมูลของฉัน"
-        description="ดูข้อมูลบัญชี บทบาท และขอบเขตงานที่ได้รับในระบบคลังสื่อการสอน"
+        description="ดูข้อมูลบัญชี ตำแหน่ง และขอบเขตงานที่ได้รับในระบบคลังสื่อการสอน"
       />
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
@@ -86,15 +100,15 @@ export default async function ProfilePage() {
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <ProfileDetail icon="users" label="บทบาทในระบบ" value={ROLE_LABELS[role]} />
+            <ProfileDetail icon="users" label="ตำแหน่งในระบบ" value={ROLE_LABELS[role]} />
             <ProfileDetail icon="book" label="ขอบเขตที่รับผิดชอบ" value={responsibility} />
-            <ProfileDetail icon="shield" label="ประเภทบัญชี" value="บัญชีตัวอย่างสำหรับพรีวิว" />
+            <ProfileDetail icon="shield" label="ประเภทบัญชี" value="บัญชีบุคลากรของระบบ" />
             <ProfileDetail icon="clock" label="สถานะบัญชี" value="เข้าใช้งานได้" />
           </div>
         </SectionCard>
 
         <div className="space-y-6">
-          <SectionCard title="สิทธิ์การใช้งาน" description={`สิทธิ์ตามบทบาท${ROLE_LABELS[role]}`}>
+          <SectionCard title="สิทธิ์การใช้งาน" description={`สิทธิ์ตามตำแหน่ง${ROLE_LABELS[role]}`}>
             <div className="space-y-3">
               {ROLE_ACCESS[role].map((item) => (
                 <div key={item} className="flex gap-3 rounded-xl bg-surface p-3.5">
@@ -107,12 +121,11 @@ export default async function ProfilePage() {
             </div>
           </SectionCard>
 
-          <SectionCard title="ข้อมูลในช่วงพรีวิว">
+          <SectionCard title="ความปลอดภัยของบัญชี">
             <div className="flex gap-3 rounded-xl border border-status-pending/20 bg-status-pending/5 p-4">
               <Icon name="info" className="mt-0.5 size-4 shrink-0 text-status-pending" />
               <p className="text-xs leading-5 text-ink-muted">
-                ข้อมูลหน้านี้เป็นข้อมูลตัวอย่าง เมื่อเชื่อมระบบสมาชิกจริงแล้ว ชื่อและบทบาทจะอ่านจากบัญชีที่เข้าสู่ระบบ
-                และบทบาทหัวหน้ากลุ่มสาระจะเป็นไปตามที่หัวหน้าวิชาการแต่งตั้งไว้
+                ชื่อ ตำแหน่ง และกลุ่มสาระอ่านจากบัญชีที่เข้าสู่ระบบ การเปลี่ยนตำแหน่งทำได้โดยหัวหน้าวิชาการเท่านั้น
               </p>
             </div>
           </SectionCard>

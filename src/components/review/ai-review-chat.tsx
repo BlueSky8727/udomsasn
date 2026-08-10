@@ -34,7 +34,7 @@ export function AiReviewChat({
   comments: Record<string, string>;
   summary: string;
 }) {
-  const isAcademic = role === USER_ROLE.ADMIN;
+  const isAcademic = role === USER_ROLE.ACADEMIC_HEAD;
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,

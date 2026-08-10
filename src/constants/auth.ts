@@ -1,2 +1,1 @@
-export const PREVIEW_ROLE_COOKIE = 'udomsasn_preview_role';
-
+export const ACCESS_TOKEN_COOKIE = 'udomsasn_access_token';

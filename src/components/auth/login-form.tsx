@@ -4,45 +4,20 @@
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Icon } from '@/components/ui/icons';
-import { DEV_LOGIN_ENABLED, signIn, type Credentials } from '@/lib/auth-client';
-import { ROLE_LABELS, USER_ROLE, type UserRole } from '@/constants/workflow';
+import { signIn, type Credentials } from '@/lib/auth-client';
 
 /**
  * ฟอร์มเข้าสู่ระบบ
  *
- * ฟอร์มตรวจข้อมูลครบทุกอย่างตามปกติแล้วส่งต่อให้ signIn() ตัดสิน
- * ตัวฟอร์มไม่รู้และไม่ควรรู้ว่าเบื้องหลังเป็นของจริงหรือทางลัดระหว่างพัฒนา
- *
- * ระหว่างที่ยังเปิดโหมดชั่วคราวอยู่ ต้องขึ้นป้ายเตือนให้เห็นชัดเสมอ
- * เพราะหน้าตาเหมือนล็อกอินจริงทุกอย่าง แต่ไม่ได้ตรวจรหัสผ่านเลย
+ * ไม่มีให้เลือกตำแหน่งตอนล็อกอิน เพราะตำแหน่งมาจากที่ผู้ดูแลระบบตั้งไว้ให้แล้ว
+ * พอเข้าระบบได้ ระบบจะพาไปหน้าตามตำแหน่งของบัญชีนั้นเอง
+ * การตรวจรหัสผ่านและตำแหน่งจริงอยู่ที่ NestJS (`POST /auth/login`) เสมอ (กฎเหล็กข้อ 2)
  */
 
 type FieldErrors = { email?: string; password?: string };
 
 /** พอเป็นรูปแบบอีเมลก็พอ ความถูกต้องจริงตัดสินที่ฝั่งเซิร์ฟเวอร์ตอนล็อกอิน */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const LOGIN_ROLES: readonly {
-  role: UserRole;
-  description: string;
-  icon: 'book' | 'layers' | 'shield';
-}[] = [
-  {
-    role: USER_ROLE.TEACHER,
-    description: 'สร้าง ส่ง และติดตามสื่อ',
-    icon: 'book',
-  },
-  {
-    role: USER_ROLE.REVIEWER,
-    description: 'ตรวจสื่อของกลุ่มสาระ',
-    icon: 'layers',
-  },
-  {
-    role: USER_ROLE.ADMIN,
-    description: 'ตรวจขั้นสุดท้ายและจัดการบทบาท',
-    icon: 'shield',
-  },
-];
 
 const validate = ({ email, password }: Credentials): FieldErrors => {
   const errors: FieldErrors = {};
@@ -52,11 +27,17 @@ const validate = ({ email, password }: Credentials): FieldErrors => {
   return errors;
 };
 
-export function LoginForm() {
+type LoginFormProps = {
+  verifiedEmail?: string | null;
+  /** ข้อความยืนยันหลังตั้งรหัสผ่านใหม่สำเร็จ */
+  resetEmail?: string | null;
+  onForgotPassword: () => void;
+};
+
+export function LoginForm({ verifiedEmail, resetEmail, onForgotPassword }: LoginFormProps) {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(verifiedEmail ?? resetEmail ?? '');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>(USER_ROLE.TEACHER);
   const [showPassword, setShowPassword] = useState(false);
   /** ตอนเชื่อมจริงค่านี้จะไปกำหนดว่า session อยู่ถาวรหรือหมดอายุเมื่อปิดเบราว์เซอร์ */
   const [remember, setRemember] = useState(true);
@@ -74,7 +55,7 @@ export function LoginForm() {
     if (errors.email || errors.password) return;
 
     setSubmitting(true);
-    const result = await signIn(credentials, { role: selectedRole, remember });
+    const result = await signIn(credentials, { remember });
     setSubmitting(false);
 
     if (result.ok) {
@@ -88,55 +69,21 @@ export function LoginForm() {
 
   return (
     <>
-      <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
-        <fieldset disabled={submitting}>
-          <legend className="text-sm font-semibold">เลือกหน้าที่ต้องการเข้า</legend>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
-            {LOGIN_ROLES.map((item) => {
-              const selected = selectedRole === item.role;
-              return (
-                <label
-                  key={item.role}
-                  className={`relative flex cursor-pointer gap-3 rounded-xl border p-3 transition sm:min-h-32 sm:flex-col ${
-                    selected
-                      ? 'border-brand bg-brand/8 text-brand shadow-sm'
-                      : 'border-line bg-panel text-ink-muted hover:border-brand/30 hover:bg-panel-hover'
-                  } ${submitting ? 'cursor-not-allowed opacity-60' : ''}`}
-                >
-                  <input
-                    type="radio"
-                    name="login-role"
-                    value={item.role}
-                    checked={selected}
-                    onChange={() => setSelectedRole(item.role)}
-                    className="sr-only"
-                  />
-                  <span
-                    className={`grid size-9 shrink-0 place-items-center rounded-lg ${
-                      selected ? 'bg-brand text-brand-contrast' : 'bg-surface text-ink-faint'
-                    }`}
-                  >
-                    <Icon name={item.icon} className="size-[18px]" />
-                  </span>
-                  <span>
-                    <strong className={`block text-xs font-semibold ${selected ? 'text-brand' : 'text-ink'}`}>
-                      {ROLE_LABELS[item.role]}
-                    </strong>
-                    <span className="mt-1 block text-[11px] leading-4 text-ink-faint">
-                      {item.description}
-                    </span>
-                  </span>
-                  {selected && (
-                    <span className="absolute right-2 top-2 grid size-5 place-items-center rounded-full bg-brand text-brand-contrast">
-                      <Icon name="check" className="size-3" />
-                    </span>
-                  )}
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
+      {(verifiedEmail || resetEmail) && (
+        <div
+          role="status"
+          className="mt-6 flex gap-2.5 rounded-xl border border-status-approved/30 bg-status-approved/8 p-3.5 text-xs leading-5 text-ink-muted"
+        >
+          <Icon name="check" className="mt-0.5 size-4 shrink-0 text-status-approved" />
+          <span>
+            {verifiedEmail
+              ? 'ยืนยันอีเมลเรียบร้อยแล้ว ขั้นต่อไปรอหัวหน้าวิชาการอนุมัติบัญชี เมื่ออนุมัติแล้วจึงเข้าสู่ระบบได้'
+              : 'ตั้งรหัสผ่านใหม่เรียบร้อยแล้ว เข้าสู่ระบบด้วยรหัสผ่านใหม่ได้เลย'}
+          </span>
+        </div>
+      )}
 
+      <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
         <div>
           <label htmlFor="email" className="block text-sm font-semibold">
             อีเมล
@@ -174,11 +121,7 @@ export function LoginForm() {
             </label>
             <button
               type="button"
-              onClick={() =>
-                setNotice(
-                  'ระบบตั้งรหัสผ่านใหม่จะเปิดใช้พร้อมกับการเชื่อมระบบยืนยันตัวตน ระหว่างนี้ติดต่อผู้ดูแลระบบ',
-                )
-              }
+              onClick={onForgotPassword}
               className="text-xs font-medium text-brand transition-opacity hover:opacity-80"
             >
               ลืมรหัสผ่าน?
@@ -248,27 +191,16 @@ export function LoginForm() {
           disabled={submitting}
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-contrast shadow-lg shadow-brand/15 transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? 'กำลังตรวจสอบ...' : `เข้าสู่ระบบเป็น${ROLE_LABELS[selectedRole]}`}
+          {submitting ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ'}
         </button>
       </form>
 
-      {DEV_LOGIN_ENABLED ? (
-        <div className="mt-7 flex gap-2.5 rounded-xl border border-status-rejected/30 bg-status-rejected/8 p-4">
-          <Icon name="warning" className="mt-0.5 size-4 shrink-0 text-status-rejected" />
-          <p className="text-xs leading-5 text-ink-muted">
-            <strong className="font-semibold text-ink">โหมดชั่วคราวระหว่างพัฒนา</strong> — กรอกอีเมล
-            กับรหัสผ่านอะไรก็เข้าได้ ยังไม่มีการยืนยันตัวตนจริง ห้ามใช้กับข้อมูลจริง
-            ต้องปิดก่อนเปิดใช้งานจริงเสมอ
-          </p>
-        </div>
-      ) : (
-        <div className="mt-7 rounded-xl border border-line bg-panel p-4">
-          <p className="text-xs leading-5 text-ink-faint">
-            หน้านี้พร้อมใช้งานแล้วแต่ยังไม่ได้ต่อกับระบบยืนยันตัวตน เมื่อเชื่อม Supabase Auth แล้ว
-            จะตรวจบทบาทจากตาราง profiles ฝั่งเซิร์ฟเวอร์ทุกครั้ง
-          </p>
-        </div>
-      )}
+      <div className="mt-7 rounded-xl border border-line bg-panel p-4">
+        <p className="text-xs leading-5 text-ink-faint">
+          ระบบตรวจอีเมล รหัสผ่าน และตำแหน่งจากฐานข้อมูลฝั่งเซิร์ฟเวอร์ทุกครั้ง
+          หากยังไม่มีบัญชีหรือตำแหน่งไม่ถูกต้อง กรุณาติดต่อหัวหน้าวิชาการ
+        </p>
+      </div>
     </>
   );
 }

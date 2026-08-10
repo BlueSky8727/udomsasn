@@ -67,12 +67,17 @@ export const EDITABLE_BY_OWNER_STATUSES: readonly MediaStatus[] = [
 export const HARD_DELETABLE_STATUSES: readonly MediaStatus[] = [MEDIA_STATUS.DRAFT];
 
 /* ------------------------------------------------------------------ */
-/* บทบาท                                                               */
+/* ตำแหน่ง                                                             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * ADMIN ดูแลบัญชีและตำแหน่งเท่านั้น ไม่มีสิทธิ์ในกระบวนการตรวจสื่อ
+ * ACADEMIC_HEAD ตรวจอนุมัติขั้นสุดท้าย และเปิดดูรายชื่อบุคลากรได้แบบอ่านอย่างเดียว
+ */
 export const USER_ROLE = {
   TEACHER: 'TEACHER',
   REVIEWER: 'REVIEWER',
+  ACADEMIC_HEAD: 'ACADEMIC_HEAD',
   ADMIN: 'ADMIN',
 } as const;
 
@@ -81,7 +86,8 @@ export type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];
 export const ROLE_LABELS: Record<UserRole, string> = {
   TEACHER: 'อาจารย์',
   REVIEWER: 'หัวหน้ากลุ่มสาระ',
-  ADMIN: 'หัวหน้าวิชาการ',
+  ACADEMIC_HEAD: 'หัวหน้าวิชาการ',
+  ADMIN: 'ผู้ดูแลระบบ',
 };
 
 /** เฉพาะอาจารย์เท่านั้นที่เป็นเจ้าของ สร้าง แก้ไข และส่งสื่อได้ */
@@ -89,7 +95,7 @@ const OWNER_CAPABLE_ROLES: readonly UserRole[] = [USER_ROLE.TEACHER];
 
 /** รอบแรกและรอบสุดท้ายเป็นคนละอำนาจตัดสิน */
 const SUBJECT_REVIEW_ROLES: readonly UserRole[] = [USER_ROLE.REVIEWER];
-const ACADEMIC_REVIEW_ROLES: readonly UserRole[] = [USER_ROLE.ADMIN];
+const ACADEMIC_REVIEW_ROLES: readonly UserRole[] = [USER_ROLE.ACADEMIC_HEAD];
 
 /* ------------------------------------------------------------------ */
 /* นิยาม transition                                                    */
@@ -99,7 +105,7 @@ export type TransitionRule = {
   from: MediaStatus;
   to: MediaStatus;
 
-  /** บทบาทที่มีสิทธิ์ "ลองทำ" — เงื่อนไขตัวตนจริงอยู่ที่ ownerOnly / assigneeOnly */
+  /** ตำแหน่งที่มีสิทธิ์ "ลองทำ" — เงื่อนไขตัวตนจริงอยู่ที่ ownerOnly / assigneeOnly */
   roles: readonly UserRole[];
 
   /** ต้องเป็นเจ้าของสื่อชิ้นนั้น */
@@ -253,7 +259,7 @@ export const TRANSITIONS: readonly TransitionRule[] = [
   rule({
     from: MEDIA_STATUS.APPROVED,
     to: MEDIA_STATUS.ARCHIVED,
-    roles: [USER_ROLE.ADMIN],
+    roles: [USER_ROLE.ACADEMIC_HEAD],
     requiresReason: true,
     label: 'ถอดออกจากคลัง',
     description: 'นำออกจากผลค้นหา ต้องระบุเหตุผล',
@@ -282,7 +288,7 @@ export const TRANSITIONS: readonly TransitionRule[] = [
  * ห้าม map มาจาก request body โดยตรง (กฎเหล็กข้อ 2)
  */
 export type TransitionContext = {
-  /** บทบาทของผู้กระทำ อ่านจาก profiles */
+  /** ตำแหน่งของผู้กระทำ อ่านจาก profiles */
   actorRole: UserRole;
   /** profiles.id ของผู้กระทำ อ่านจาก session */
   actorId: string;
@@ -321,7 +327,7 @@ export const DENIAL_MESSAGES: Record<DenialCode, string> = {
   UNKNOWN_STATUS: 'สถานะไม่ถูกต้อง',
   SAME_STATUS: 'สถานะปลายทางเหมือนสถานะปัจจุบัน',
   NO_SUCH_TRANSITION: 'ไม่อนุญาตให้เปลี่ยนสถานะตามเส้นทางนี้',
-  ROLE_NOT_ALLOWED: 'บทบาทของคุณไม่มีสิทธิ์ทำรายการนี้',
+  ROLE_NOT_ALLOWED: 'ตำแหน่งของคุณไม่มีสิทธิ์ทำรายการนี้',
   NOT_OWNER: 'ทำได้เฉพาะเจ้าของสื่อเท่านั้น',
   NOT_ASSIGNEE: 'ทำได้เฉพาะผู้ตรวจที่ถือเรื่องนี้อยู่',
   ALREADY_ASSIGNED: 'มีผู้ตรวจรับเรื่องนี้ไปแล้ว',

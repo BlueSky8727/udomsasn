@@ -1,81 +1,97 @@
-// src/app/admin/page.tsx
-import { notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/ui/app-shell';
 import { PageHeading } from '@/components/ui/page-heading';
-import { Metric, SectionCard, Pill } from '@/components/ui/enterprise';
+import { Metric, SectionCard } from '@/components/ui/enterprise';
+import { Icon } from '@/components/ui/icons';
 import { RoleAssignmentPanel } from '@/components/admin/role-assignment-panel';
 import { USER_ROLE } from '@/constants/workflow';
+import { backendFetch } from '@/lib/backend';
 import { getViewerRole } from '@/lib/auth';
+import type { BackendUser } from '@/types/backend';
 
-export default async function Admin() {
+/**
+ * หน้าสมาชิกและตำแหน่ง
+ *
+ * ผู้ดูแลระบบเข้ามาตั้งตำแหน่งได้ หัวหน้าวิชาการเข้ามาดูได้อย่างเดียว
+ * ฝั่งเซิร์ฟเวอร์ปฏิเสธ PATCH ของหัวหน้าวิชาการอยู่แล้ว ที่นี่แค่ไม่แสดงปุ่มให้สับสน
+ */
+export default async function AdminPage() {
   const role = await getViewerRole();
-  if (role !== USER_ROLE.ADMIN) notFound();
+  const canView: string[] = [USER_ROLE.ADMIN, USER_ROLE.ACADEMIC_HEAD];
+  if (!canView.includes(role)) redirect('/forbidden');
+  const canEdit = role === USER_ROLE.ADMIN;
+
+  let users: BackendUser[] = [];
+  try {
+    users = await backendFetch<BackendUser[]>('/users');
+  } catch {
+    users = [];
+  }
+
+  const pendingUsers = users.filter((user) => user.accountStatus === 'PENDING');
+  const pending = pendingUsers.length;
+  const assigned = users.filter(
+    (user) => user.accountStatus === 'ACTIVE' && user.role !== USER_ROLE.TEACHER,
+  ).length;
 
   return (
     <AppShell role={role}>
       <PageHeading
-        eyebrow="Administration"
-        title="ผู้สมัครและการแต่งตั้งบทบาท"
-        description="ดูรายชื่อผู้สมัครทั้งหมด กำหนดบทบาทอาจารย์หรือหัวหน้ากลุ่มสาระ และเลือกกลุ่มสาระที่รับผิดชอบ"
+        eyebrow="Members"
+        title="สมาชิกและตำแหน่ง"
+        description={
+          canEdit
+            ? 'รายชื่อผู้สมัครและบุคลากรทั้งหมด พร้อมแต่งตั้งตำแหน่งและกลุ่มสาระ'
+            : 'รายชื่อบุคลากรทั้งหมดและตำแหน่งของแต่ละคน (ดูอย่างเดียว)'
+        }
       />
+      {pending > 0 && (
+        <div
+          role="status"
+          className="mb-5 flex gap-3 rounded-2xl border border-status-pending/35 bg-status-pending/10 p-4"
+        >
+          <Icon name="bell" className="mt-0.5 size-5 shrink-0 text-status-pending" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">
+              มีผู้สมัครใหม่ {pending} คน รอแต่งตั้งตำแหน่ง
+            </p>
+            <p className="mt-1 text-xs leading-6 text-ink-muted">
+              {pendingUsers
+                .slice(0, 3)
+                .map((user) => user.name)
+                .join(' · ')}
+              {pending > 3 ? ` และอีก ${pending - 3} คน` : ''}
+              {canEdit
+                ? ' — เลือกตำแหน่งให้ในตารางด้านล่างแล้วกดบันทึกเพื่อเปิดใช้งานบัญชี'
+                : ' — รอผู้ดูแลระบบแต่งตั้งตำแหน่ง'}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-3">
         <Metric
-          label="ผู้สมัครและบุคลากรทั้งหมด"
-          value="146"
-          detail="รวมบัญชีที่สมัครและเปิดใช้งานแล้ว"
+          label="บุคลากรทั้งหมด"
+          value={String(users.length)}
+          detail="บัญชีในระบบ"
           icon="users"
         />
         <Metric
-          label="รอแต่งตั้งบทบาท"
-          value="3"
-          detail="บัญชีใหม่ที่หัวหน้าวิชาการต้องตรวจ"
+          label="รอแต่งตั้ง"
+          value={String(pending)}
+          detail="ผู้สมัครที่ยังเข้าใช้งานไม่ได้"
           icon="inbox"
         />
         <Metric
-          label="หัวหน้ากลุ่มสาระ"
-          value="16"
-          detail="8 กลุ่มสาระเดิม · 8 สาขาวิชาศาสนา"
+          label="ได้รับตำแหน่งแล้ว"
+          value={String(assigned)}
+          detail="นอกเหนือจากอาจารย์ทั่วไป"
           icon="shield"
         />
       </div>
-      <SectionCard
-        className="mt-6"
-        title="รายชื่อผู้สมัครและบุคลากรทั้งหมด"
-        description="ค้นหา กรอง และแต่งตั้งบทบาทได้จากรายชื่อเดียว ผู้สมัครใหม่จะแสดงสถานะรอแต่งตั้ง"
-      >
-        <RoleAssignmentPanel />
+      <SectionCard className="mt-6" title="รายชื่อบุคลากร">
+        <RoleAssignmentPanel initialUsers={users} canEdit={canEdit} />
       </SectionCard>
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
-        <SectionCard title="AI Configuration">
-          <div className="space-y-3 text-xs">
-            <div className="flex justify-between">
-              <span className="text-ink-muted">Provider</span>
-              <b>OpenTyphoon</b>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-ink-muted">Model</span>
-              <b className="max-w-48 truncate">typhoon-v2.5-30b-a3b-instruct</b>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-ink-muted">Temperature</span>
-              <b>0.2</b>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-ink-muted">Auto state change</span>
-              <Pill tone="ok">ปิดถาวร</Pill>
-            </div>
-          </div>
-        </SectionCard>
-        <SectionCard title="Security">
-          <div className="space-y-3 text-xs text-ink-muted">
-            <p>✓ Supabase RLS เป็นด่านฐานข้อมูล</p>
-            <p>✓ Private Storage + signed URL</p>
-            <p>✓ Server-only Typhoon API key</p>
-            <p>✓ Audit log ทุก workflow transition</p>
-            <p>✓ Hard delete เฉพาะ DRAFT</p>
-          </div>
-        </SectionCard>
-      </div>
     </AppShell>
   );
 }

@@ -1,21 +1,18 @@
-# Architecture V2
+# Architecture
 
-## Modules
-- Authentication / RBAC: Supabase Auth + profiles.role
-- Media: metadata, private files, versions
-- Workflow: 9-state, two-stage state machine in `src/constants/workflow.ts`
-- Review: assignments, plain-language review topics, comments, decisions
-- AI Screening: Typhoon server route only; no state transition permission
-- Library: only APPROVED media is public/searchable
-- Audit: immutable event-oriented `audit_logs`
-- QA Analytics: submissions, turnaround time, approval rate, reuse/download events
+```text
+Browser
+  └─ Next.js 16
+       ├─ HttpOnly JWT cookie + proxy route protection
+       ├─ Server Components อ่านข้อมูลผ่าน backendFetch()
+       ├─ /api/backend/* เป็น same-origin proxy สำหรับ client actions
+       └─ /api/ai/* เรียก OpenTyphoon และบันทึกผลกลับ backend
+            └─ NestJS API
+                 ├─ JWT guard + role/owner/assignee/department authorization
+                 ├─ Prisma transactions สำหรับ workflow และ status log
+                 ├─ private upload directory + guarded download
+                 ├─ document text extraction
+                 └─ PostgreSQL
+```
 
-## Trust boundaries
-Browser input is untrusted. Role/owner/assignee must be resolved server-side. Typhoon API key and Supabase service role are server-only. Uploaded document text is also untrusted AI input and is wrapped as document data; prompt injection inside documents must never become an instruction.
-
-## Workflow
-DRAFT -> PENDING -> IN_REVIEW -> ACADEMIC_REVIEW -> APPROVED
-                         |                 -> ACADEMIC_REVISION -> ACADEMIC_REVIEW
-                         -> REVISION -> PENDING (new version)
-                         -> REJECTED
-APPROVED -> ARCHIVED -> PENDING (new version)
+Browser input, metadata และข้อความจากไฟล์ถือเป็นข้อมูลที่ไม่น่าเชื่อถือเสมอ การตัดสินสิทธิ์อ่านจาก JWT และฐานข้อมูลฝั่ง NestJS เท่านั้น ผล AI ถูกบันทึกใน `AiReview` และไม่สามารถเปลี่ยน `Media.status` ได้

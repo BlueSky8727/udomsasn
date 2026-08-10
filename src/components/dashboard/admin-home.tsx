@@ -18,15 +18,17 @@ type AuditEvent = {
 
 const metricIcons: readonly IconName[] = ['book', 'inbox', 'check', 'refresh'];
 
-/** แดชบอร์ดหัวหน้าวิชาการ: แต่งตั้งบทบาทและตัดสินงานรอบสุดท้าย */
+/** แดชบอร์ดหัวหน้าวิชาการ: แต่งตั้งตำแหน่งและตัดสินงานรอบสุดท้าย */
 export function AdminHome({
   metrics,
   jobs,
   timeline,
+  pendingUsers,
 }: {
   metrics: readonly AdminMetric[];
   jobs: readonly ReviewJob[];
   timeline: readonly AuditEvent[];
+  pendingUsers: number;
 }) {
   const waiting = jobs.filter((job) => job.status === MEDIA_STATUS.PENDING).length;
   const inReview = jobs.filter((job) => job.status === MEDIA_STATUS.IN_REVIEW).length;
@@ -48,7 +50,7 @@ export function AdminHome({
           <div>
             <Pill>แดชบอร์ดหัวหน้าวิชาการ</Pill>
             <h1 className="mt-5 max-w-3xl text-3xl font-bold leading-tight tracking-[-.045em] sm:text-4xl">
-              แต่งตั้งคนให้ถูกบทบาท
+              แต่งตั้งคนให้ถูกตำแหน่ง
               <br />
               ตรวจงานรอบสุดท้ายให้จบ
             </h1>
@@ -69,7 +71,7 @@ export function AdminHome({
                 className="inline-flex items-center gap-2 rounded-xl border border-line bg-panel/80 px-4 py-2.5 text-sm font-semibold transition hover:border-brand/30"
               >
                 <Icon name="users" className="size-4" />
-                แต่งตั้งบทบาท
+                แต่งตั้งตำแหน่ง
               </Link>
             </div>
           </div>
@@ -92,7 +94,7 @@ export function AdminHome({
             <div className="mt-5 grid grid-cols-2 gap-3">
               {[
                 ['รอตรวจขั้นสุดท้าย', academicWaiting],
-                ['ผู้สมัครรอแต่งตั้ง', 3],
+                ['ผู้สมัครรอแต่งตั้ง', pendingUsers],
                 ['กลุ่มสาระกำลังตรวจ', inReview],
                 ['ส่งกลับแก้ไข', revision],
               ].map(([label, value]) => (
@@ -179,8 +181,8 @@ export function AdminHome({
               </span>
               <Pill tone="warn">ต้องดำเนินการ</Pill>
             </div>
-            <p className="mt-5 text-4xl font-bold tracking-[-.04em]">3</p>
-            <p className="mt-1 text-xs text-ink-muted">บัญชีใหม่ยังไม่ได้ยืนยันบทบาท</p>
+            <p className="mt-5 text-4xl font-bold tracking-[-.04em]">{pendingUsers}</p>
+            <p className="mt-1 text-xs text-ink-muted">บัญชีใหม่ยังไม่ได้ยืนยันตำแหน่ง</p>
             <Link
               href="/admin"
               className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-contrast"

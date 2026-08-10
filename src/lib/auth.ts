@@ -1,8 +1,31 @@
-// src/lib/auth.ts
-import { USER_ROLE, type UserRole } from '@/constants/workflow'; import { backendFetch } from '@/lib/backend';
-type Me={id:string;name:string;email:string;role:UserRole;department:string|null};
-async function me():Promise<Me|null>{try{return await backendFetch<Me>('/auth/me')}catch{return null}}
-export async function getViewerRole():Promise<UserRole>{return (await me())?.role??USER_ROLE.TEACHER}
-export async function getViewerName():Promise<string>{return (await me())?.name??'ผู้ใช้งาน'}
-export async function getViewerSubjectGroup():Promise<string|null>{return (await me())?.department??null}
-export async function getViewer(){return me()}
+import { cache } from 'react';
+import { redirect } from 'next/navigation';
+import { backendFetch } from '@/lib/backend';
+import type { BackendUser } from '@/types/backend';
+import type { UserRole } from '@/constants/workflow';
+
+export const getViewer = cache(async (): Promise<BackendUser | null> => {
+  try {
+    return await backendFetch<BackendUser>('/auth/me');
+  } catch {
+    return null;
+  }
+});
+
+export async function requireViewer(): Promise<BackendUser> {
+  const viewer = await getViewer();
+  if (!viewer) redirect('/login');
+  return viewer;
+}
+
+export async function getViewerRole(): Promise<UserRole> {
+  return (await requireViewer()).role;
+}
+
+export async function getViewerName(): Promise<string> {
+  return (await requireViewer()).name;
+}
+
+export async function getViewerSubjectGroup(): Promise<string | null> {
+  return (await requireViewer()).department;
+}

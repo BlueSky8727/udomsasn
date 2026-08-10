@@ -9,9 +9,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// ADMIN ดูแลบัญชีและตำแหน่งเท่านั้น ไม่มีสิทธิ์ในกระบวนการตรวจสื่อ
+/// ACADEMIC_HEAD ตรวจอนุมัติขั้นสุดท้าย และดูรายชื่อบุคลากรได้แบบอ่านอย่างเดียว
 enum UserRole {
   TEACHER
   REVIEWER
+  ACADEMIC_HEAD
   ADMIN
 }
 
@@ -52,22 +55,46 @@ enum ReviewResultValue {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  passwordHash  String
-  name          String
-  role          UserRole      @default(TEACHER)
-  accountStatus AccountStatus @default(PENDING)
-  department    String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  email           String        @unique
+  passwordHash    String
+  name            String
+  phone           String?
+  avatarPath      String?
+  emailVerifiedAt DateTime?
+  role            UserRole      @default(TEACHER)
+  accountStatus   AccountStatus @default(PENDING)
+  department      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  media         Media[]       @relation("MediaOwner")
-  assignedMedia Media[]       @relation("MediaAssignee")
-  reviews       Review[]
-  statusLogs    StatusLog[]
-  notifications Notification[]
-  downloads     Download[]
+  media              Media[]                  @relation("MediaOwner")
+  assignedMedia      Media[]                  @relation("MediaAssignee")
+  reviews            Review[]
+  statusLogs         StatusLog[]
+  notifications      Notification[]
+  downloads          Download[]
+  aiReviews          AiReview[]
+  verificationTokens EmailVerificationToken[]
+  passwordResets     PasswordResetToken[]
+}
+
+/// โทเคนยืนยันอีเมล เก็บเฉพาะค่า hash ห้ามเก็บโทเคนดิบในฐานข้อมูล
+/// หนึ่งแถวมีสองทางให้ยืนยัน: ลิงก์ในอีเมล (tokenHash) และรหัส 6 หลักที่กรอกเอง (codeHash)
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  codeHash  String
+  /// นับครั้งที่กรอกรหัสผิด กันเดารหัส 6 หลักแบบไล่สุ่ม
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Media {
@@ -102,6 +129,7 @@ model Media {
   reviews    Review[]
   statusLogs StatusLog[]
   downloads  Download[]
+  aiReviews  AiReview[]
 
   @@index([ownerId, status])
   @@index([subjectGroup, status])
@@ -205,5 +233,36 @@ model Download {
   user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([mediaId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model AiReview {
+  id        String   @id @default(cuid())
+  mediaId   String
+  actorId   String
+  provider  String
+  result    Json
+  createdAt DateTime @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  actor User  @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([mediaId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+/// รหัสตั้งรหัสผ่านใหม่ แยกตารางจากรหัสยืนยันอีเมล เพื่อไม่ให้เอารหัสข้ามวัตถุประสงค์กันได้
+/// อายุสั้นกว่า (30 นาที) เพราะอันตรายกว่า ถ้าหลุดคือยึดบัญชีได้เลย
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, createdAt])
 }

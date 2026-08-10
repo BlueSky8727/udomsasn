@@ -35,7 +35,7 @@ export const SUBJECT_GROUPS = [
   { label: 'ศาสนา', subjects: RELIGIOUS_SUBJECTS },
 ] as const;
 
-/** รายการแบบแบนสำหรับตัวกรองและหน้ากำหนดบทบาท */
+/** รายการแบบแบนสำหรับตัวกรองและหน้ากำหนดตำแหน่ง */
 export const SUBJECTS = [...GENERAL_SUBJECTS, ...RELIGIOUS_SUBJECTS] as const;
 
 export const GRADE_LEVELS = [
