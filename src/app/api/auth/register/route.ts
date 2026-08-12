@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { BACKEND_URL } from '@/lib/backend';
-import { isSameOriginRequest, takeRateLimit } from '@/lib/request-security';
+import { isSameOriginRequest } from '@/lib/request-security';
 
 /** รูปโปรไฟล์จำกัด 2MB ที่ NestJS เผื่อส่วนหัวของ multipart อีกเล็กน้อย */
 const MAX_BODY_BYTES = 3 * 1024 * 1024;
@@ -9,15 +9,6 @@ export async function POST(request: Request) {
   if (!isSameOriginRequest(request)) {
     return NextResponse.json({ error: 'ไม่อนุญาตคำขอจากเว็บไซต์อื่น' }, { status: 403 });
   }
-  // การสมัครทำให้ระบบส่งอีเมลออก จึงต้องกันไม่ให้ยิงรัวจาก IP เดียว
-  const limit = takeRateLimit(request, 'auth-register', 5, 10 * 60 * 1000);
-  if (!limit.allowed) {
-    return NextResponse.json(
-      { error: `สมัครถี่เกินไป กรุณารออีก ${limit.retryAfterSeconds} วินาที` },
-      { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
-    );
-  }
-
   const declaredLength = Number(request.headers.get('content-length'));
   if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
     return NextResponse.json({ error: 'ไฟล์รูปโปรไฟล์ใหญ่เกินกำหนด' }, { status: 413 });

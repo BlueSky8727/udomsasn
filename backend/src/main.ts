@@ -8,6 +8,11 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const trustProxyHops = Math.max(0, Number(process.env.TRUST_PROXY_HOPS ?? 0));
+  if (trustProxyHops > 0) {
+    app.getHttpAdapter().getInstance().set('trust proxy', trustProxyHops);
+  }
+
   const port = Number(process.env.PORT ?? 4000);
 
   const allowedOrigins = (

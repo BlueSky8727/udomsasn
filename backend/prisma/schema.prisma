@@ -165,6 +165,7 @@ model MediaVersion {
 model Review {
   id          String          @id @default(cuid())
   mediaId     String
+  mediaVersion Int
   reviewerId  String
   stage       ReviewStage
   decision    ReviewDecision?
@@ -177,7 +178,8 @@ model Review {
   reviewer User         @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
   items    ReviewItem[]
 
-  @@index([mediaId, stage])
+  @@unique([mediaId, mediaVersion, reviewerId, stage])
+  @@index([mediaId, mediaVersion, stage])
   @@index([reviewerId, stage])
 }
 
@@ -265,4 +267,14 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+/// rate limit ส่วนกลางใน PostgreSQL ใช้ร่วมกันได้เมื่อ backend มีหลาย instance
+model RateLimitBucket {
+  key       String   @id
+  count     Int
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }

@@ -24,18 +24,18 @@ export default async function HomePage() {
     let mine: ReturnType<typeof toDemoMedia>[] = [];
     try { mine = (await backendFetch<BackendMedia[]>('/media/mine')).map(toDemoMedia); } catch { mine = []; }
     return (
-      <AppShell role={role}>
+      <AppShell role={role} viewerName={viewer}>
         <TeacherHome name={viewer} media={mine} />
       </AppShell>
     );
   }
 
   if (role === USER_ROLE.REVIEWER) {
-    const subjectGroup = await getViewerSubjectGroup();
+    const [subjectGroup, viewer] = await Promise.all([getViewerSubjectGroup(), getViewerName()]);
     let subjectJobs: ReturnType<typeof toReviewJob>[] = [];
     try { subjectJobs = (await backendFetch<BackendMedia[]>('/media/queue')).map(toReviewJob); } catch { subjectJobs = []; }
     return (
-      <AppShell role={role}>
+      <AppShell role={role} viewerName={viewer}>
         <ReviewerHome subjectGroup={subjectGroup} jobs={subjectJobs} />
       </AppShell>
     );
@@ -48,7 +48,7 @@ export default async function HomePage() {
     let accounts: BackendUser[] = [];
     try { accounts = await backendFetch<BackendUser[]>('/users'); } catch { accounts = []; }
     return (
-      <AppShell role={role}>
+      <AppShell role={role} viewerName={viewer}>
         <SystemAdminHome name={viewer} users={accounts} />
       </AppShell>
     );
@@ -72,8 +72,9 @@ export default async function HomePage() {
     { label: 'อัตราผ่าน', value: `${summary?.approvalRate ?? 0}%`, detail: 'คำนวณจากฐานข้อมูล' },
     { label: 'นำกลับไปใช้', value: String(summary?.downloads ?? 0), detail: 'จำนวนดาวน์โหลดสะสม' },
   ];
+  const viewer = await getViewerName();
   return (
-    <AppShell role={role}>
+    <AppShell role={role} viewerName={viewer}>
       <AdminHome metrics={metrics} jobs={jobs} timeline={[]} pendingUsers={users.filter((user) => user.accountStatus === 'PENDING').length} />
     </AppShell>
   );

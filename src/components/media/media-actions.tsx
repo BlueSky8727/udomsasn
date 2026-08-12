@@ -9,7 +9,12 @@ export function MediaActions({ id, status }: { id: string; status: MediaStatus }
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const editable = new Set<MediaStatus>([MEDIA_STATUS.DRAFT, MEDIA_STATUS.REVISION, MEDIA_STATUS.ACADEMIC_REVISION]).has(status);
+  const editable = new Set<MediaStatus>([
+    MEDIA_STATUS.DRAFT,
+    MEDIA_STATUS.REVISION,
+    MEDIA_STATUS.ACADEMIC_REVISION,
+    MEDIA_STATUS.ARCHIVED,
+  ]).has(status);
   const query = status === MEDIA_STATUS.DRAFT ? `draft=${id}` : `revise=${id}`;
 
   const remove = async () => {

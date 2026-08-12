@@ -12,6 +12,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
     "mail:test": "tsx scripts/mail-test.ts",
+    "test:integration": "npm run build && tsx --test test/**/*.test.ts",
     "db:setup": "prisma generate && prisma migrate dev --name init && npm run prisma:seed"
   },
   "dependencies": {
@@ -20,7 +21,8 @@
     "@nestjs/core": "^11.1.6",
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/platform-express": "^11.1.6",
-    "@prisma/client": "^6.19.0",
+    "@prisma/client": "6.19.3",
+    "@udomsasn/workflow": "file:../packages/workflow",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
@@ -37,11 +39,8 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^24.3.0",
     "@types/nodemailer": "^8.0.1",
-    "prisma": "^6.19.0",
+    "prisma": "6.19.3",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   }
 }

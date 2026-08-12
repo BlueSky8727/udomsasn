@@ -46,23 +46,35 @@ function RoleBadge({ role }: { role: UserRole }) {
 export function RoleAssignmentPanel({
   initialUsers,
   canEdit,
+  initialQuery = '',
 }: {
   initialUsers: BackendUser[];
   canEdit: boolean;
+  initialQuery?: string;
 }) {
   const [users, setUsers] = useState(initialUsers);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const visible = useMemo(() => {
-    const value = query.trim().toLocaleLowerCase('th');
-    if (!value) return users;
-    return users.filter((user) =>
-      `${user.name} ${user.email} ${user.id} ${ROLE_LABELS[user.role]}`
-        .toLocaleLowerCase('th')
-        .includes(value),
-    );
+    const tokens = query.trim().toLocaleLowerCase('th').split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return users;
+    return users.filter((user) => {
+      const haystack = [
+        user.name,
+        user.email,
+        user.phone,
+        user.id,
+        ROLE_LABELS[user.role],
+        user.department,
+        STATUS_LABELS[user.accountStatus],
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLocaleLowerCase('th');
+      return tokens.every((token) => haystack.includes(token));
+    });
   }, [query, users]);
 
   const change = (id: string, patch: Partial<BackendUser>) =>
@@ -115,7 +127,7 @@ export function RoleAssignmentPanel({
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="ค้นหาชื่อ อีเมล หรือตำแหน่ง"
+          placeholder="ค้นหาชื่อ อีเมล เบอร์โทร ตำแหน่ง หรือกลุ่มสาระ"
           className="w-full max-w-sm rounded-xl border border-line bg-surface px-3 py-2.5 text-xs outline-none focus:border-brand/45"
         />
         <p className="text-[11px] text-ink-faint">

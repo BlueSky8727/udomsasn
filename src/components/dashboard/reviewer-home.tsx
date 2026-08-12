@@ -30,15 +30,18 @@ export function ReviewerHome({
 
   return (
     <>
-      <section className="relative overflow-hidden rounded-[30px] border border-status-in-review/20 bg-gradient-to-br from-status-in-review/12 via-panel to-panel p-7 shadow-sm sm:p-9">
-        <div className="absolute -right-16 -top-20 size-72 rounded-full bg-status-in-review/10 blur-2xl" />
+      <section className="relative overflow-hidden rounded-xl bg-gradient-to-r from-navy-deep via-navy to-brand p-7 text-white shadow-sm sm:p-8">
+        <span className="absolute inset-y-0 left-0 w-2 bg-coral" />
+        <div className="school-pattern pointer-events-none absolute inset-y-0 right-0 w-2/5 opacity-55" />
         <div className="relative grid gap-7 xl:grid-cols-[1.45fr_.75fr]">
           <div>
-            <Pill>หัวหน้ากลุ่มสาระ{subjectGroup ?? 'ที่ยังไม่ได้กำหนด'}</Pill>
+            <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/80">
+              หัวหน้ากลุ่มสาระ{subjectGroup ?? 'ที่ยังไม่ได้กำหนด'}
+            </span>
             <h1 className="mt-5 max-w-3xl text-3xl font-bold leading-tight tracking-[-.045em] sm:text-4xl">
               จัดคิวให้ชัด ตรวจงานให้จบ
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-ink-muted">
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/70">
               แสดงเฉพาะสื่อที่อาจารย์ส่งมายังกลุ่มสาระ{subjectGroup ?? 'ของคุณ'} · มี{' '}
               {waiting.length} เรื่องรอรับ และ {inReview.length} เรื่องกำลังตรวจ
               {highRisk.length > 0
@@ -48,14 +51,14 @@ export function ReviewerHome({
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/queue"
-                className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-contrast transition hover:bg-brand-strong"
+                className="inline-flex items-center gap-2 rounded-lg bg-coral px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-coral-strong"
               >
                 <Icon name="inbox" className="size-4" />
                 เปิดคิวตรวจ
               </Link>
               <Link
                 href="/analytics"
-                className="inline-flex items-center gap-2 rounded-xl border border-line bg-panel/80 px-4 py-2.5 text-sm font-semibold transition hover:border-brand/30"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15"
               >
                 <Icon name="chart" className="size-4" />
                 ดูรายงาน QA
@@ -63,23 +66,23 @@ export function ReviewerHome({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-line/80 bg-surface/70 p-5 backdrop-blur">
+          <div className="rounded-xl border border-white/15 bg-white/8 p-5 backdrop-blur">
             <div className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-xl bg-status-in-review/10 text-status-in-review">
+              <span className="grid size-10 place-items-center rounded-lg bg-coral/25 text-white">
                 <Icon name="shield" />
               </span>
               <div>
                 <p className="text-sm font-bold">เป้าหมายวันนี้</p>
-                <p className="text-xs text-ink-faint">ปิดงานในมือก่อนรับเรื่องใหม่</p>
+                <p className="text-xs text-white/60">ปิดงานในมือก่อนรับเรื่องใหม่</p>
               </div>
             </div>
             <div className="mt-5 space-y-3">
-              <div className="flex items-center justify-between rounded-xl border border-line bg-panel p-3">
-                <span className="text-xs text-ink-muted">งานกำลังตรวจ</span>
+              <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/8 p-3">
+                <span className="text-xs text-white/65">งานกำลังตรวจ</span>
                 <strong className="text-lg">{inReview.length}</strong>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-line bg-panel p-3">
-                <span className="text-xs text-ink-muted">งานเสี่ยงสูง</span>
+              <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/8 p-3">
+                <span className="text-xs text-white/65">งานเสี่ยงสูง</span>
                 <strong className="text-lg text-status-rejected">{highRisk.length}</strong>
               </div>
             </div>

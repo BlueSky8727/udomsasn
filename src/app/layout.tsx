@@ -32,7 +32,7 @@ const themeScript = `
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="th" suppressHydrationWarning>
+    <html lang="th" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className="min-h-screen bg-surface font-sans text-ink">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {children}

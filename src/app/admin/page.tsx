@@ -15,11 +15,17 @@ import type { BackendUser } from '@/types/backend';
  * ผู้ดูแลระบบเข้ามาตั้งตำแหน่งได้ หัวหน้าวิชาการเข้ามาดูได้อย่างเดียว
  * ฝั่งเซิร์ฟเวอร์ปฏิเสธ PATCH ของหัวหน้าวิชาการอยู่แล้ว ที่นี่แค่ไม่แสดงปุ่มให้สับสน
  */
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string | string[] }>;
+}) {
   const role = await getViewerRole();
   const canView: string[] = [USER_ROLE.ADMIN, USER_ROLE.ACADEMIC_HEAD];
   if (!canView.includes(role)) redirect('/forbidden');
   const canEdit = role === USER_ROLE.ADMIN;
+  const rawQuery = (await searchParams).q;
+  const initialQuery = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery)?.trim().slice(0, 120) ?? '';
 
   let users: BackendUser[] = [];
   try {
@@ -35,7 +41,7 @@ export default async function AdminPage() {
   ).length;
 
   return (
-    <AppShell role={role}>
+    <AppShell role={role} initialSearchQuery={initialQuery}>
       <PageHeading
         eyebrow="Members"
         title="สมาชิกและตำแหน่ง"
@@ -90,7 +96,7 @@ export default async function AdminPage() {
         />
       </div>
       <SectionCard className="mt-6" title="รายชื่อบุคลากร">
-        <RoleAssignmentPanel initialUsers={users} canEdit={canEdit} />
+        <RoleAssignmentPanel initialUsers={users} canEdit={canEdit} initialQuery={initialQuery} />
       </SectionCard>
     </AppShell>
   );

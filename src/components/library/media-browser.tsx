@@ -47,8 +47,14 @@ const searchableText = (media: DemoMedia) =>
     .join(' ')
     .toLowerCase();
 
-export function MediaBrowser({ media }: { media: readonly DemoMedia[] }) {
-  const [query, setQuery] = useState('');
+export function MediaBrowser({
+  media,
+  initialQuery = '',
+}: {
+  media: readonly DemoMedia[];
+  initialQuery?: string;
+}) {
+  const [query, setQuery] = useState(initialQuery);
   const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
   const [view, setView] = useState<'grid' | 'list'>('grid');
 

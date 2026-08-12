@@ -13,18 +13,29 @@ export function Metric({
   icon: IconName;
   className?: string;
 }) {
+  const tones: Partial<Record<IconName, string>> = {
+    check: 'bg-status-approved/12 text-status-approved',
+    warning: 'bg-status-rejected/12 text-status-rejected',
+    message: 'bg-coral/12 text-coral',
+    edit: 'bg-blue-500/10 text-blue-600 dark:text-blue-300',
+    clock: 'bg-status-pending/12 text-status-pending',
+    inbox: 'bg-status-pending/12 text-status-pending',
+    refresh: 'bg-coral/12 text-coral',
+  };
+  const tone = tones[icon] ?? 'bg-brand/10 text-brand';
+
   return (
-    <div className={`rounded-2xl border border-line/80 bg-panel p-5 shadow-sm ${className}`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-ink-faint">{label}</p>
-          <p className="mt-2 text-3xl font-bold tracking-[-.04em]">{value}</p>
-        </div>
-        <span className="grid size-10 place-items-center rounded-xl bg-brand/10 text-brand">
-          <Icon name={icon} />
+    <div className={`rounded-xl border border-line/80 bg-panel p-4 shadow-sm ${className}`}>
+      <div className="flex items-center gap-3.5">
+        <span className={`grid size-12 shrink-0 place-items-center rounded-xl ${tone}`}>
+          <Icon name={icon} className="size-5" />
         </span>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-medium text-ink-muted">{label}</p>
+          <p className="mt-0.5 text-3xl font-bold leading-none tracking-[-.04em]">{value}</p>
+        </div>
       </div>
-      <p className="mt-3 text-xs text-ink-muted">{detail}</p>
+      <p className="mt-3 border-t border-line/70 pt-2.5 text-[11px] text-ink-faint">{detail}</p>
     </div>
   );
 }
@@ -42,13 +53,16 @@ export function SectionCard({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-line/80 bg-panel p-5 shadow-sm ${className}`}
+      className={`overflow-hidden rounded-xl border border-line/80 bg-panel shadow-sm ${className}`}
     >
-      <div className="mb-5">
-        <h2 className="font-bold tracking-[-.02em]">{title}</h2>
-        {description && <p className="mt-1 text-xs leading-5 text-ink-faint">{description}</p>}
+      <div className="relative overflow-hidden bg-gradient-to-r from-navy-deep to-navy px-5 py-3.5 text-white">
+        <div className="school-pattern-soft pointer-events-none absolute inset-0 opacity-30" />
+        <div className="relative">
+          <h2 className="font-bold tracking-[-.02em]">{title}</h2>
+          {description && <p className="mt-1 text-xs leading-5 text-white/65">{description}</p>}
+        </div>
       </div>
-      {children}
+      <div className="p-5">{children}</div>
     </section>
   );
 }

@@ -51,6 +51,11 @@ export class MailService implements OnModuleInit {
       port,
       secure: port === 465,
       auth: { user, pass },
+      // เครือข่ายบางแห่งบล็อกพอร์ต SMTP ถ้าไม่กำหนด timeout
+      // NestJS จะค้างอยู่ในขั้นเริ่มระบบและยังไม่เปิดพอร์ต API
+      connectionTimeout: 5_000,
+      greetingTimeout: 5_000,
+      socketTimeout: 10_000,
     });
     this.logger.log(`ส่งอีเมลผ่าน ${host}:${port} ในนาม ${user}`);
   }
@@ -59,16 +64,21 @@ export class MailService implements OnModuleInit {
    * ทัก SMTP ตั้งแต่ตอน start เพื่อให้รู้ทันทีว่า host/รหัสผ่านผิด
    * ไม่ throw เพราะเมลล่มไม่ควรทำให้ทั้งระบบใช้งานไม่ได้ แค่ต้องเห็นใน log ชัด ๆ
    */
-  async onModuleInit(): Promise<void> {
+  onModuleInit(): void {
     if (!this.transporter) return;
-    try {
-      await this.transporter.verify();
-      this.logger.log('เชื่อมต่อเซิร์ฟเวอร์อีเมลสำเร็จ พร้อมส่งอีเมลจริง');
-    } catch (error) {
-      this.logger.error(
-        `เชื่อมต่อเซิร์ฟเวอร์อีเมลไม่สำเร็จ ผู้สมัครจะไม่ได้รับอีเมลยืนยัน: ${(error as Error).message}`,
-      );
-    }
+
+    // การตรวจ SMTP เป็น health check เสริม ไม่ควรขวางการเปิด API
+    // หาก SMTP ใช้งานไม่ได้ ระบบหลักยังเปิดได้และจะแจ้งปัญหาใน log
+    void this.transporter
+      .verify()
+      .then(() => {
+        this.logger.log('เชื่อมต่อเซิร์ฟเวอร์อีเมลสำเร็จ พร้อมส่งอีเมลจริง');
+      })
+      .catch((error: Error) => {
+        this.logger.error(
+          `เชื่อมต่อเซิร์ฟเวอร์อีเมลไม่สำเร็จ ผู้สมัครจะไม่ได้รับอีเมลยืนยัน: ${error.message}`,
+        );
+      });
   }
 
   /** true = ส่งอีเมลออกไปจริง, false = เขียนลง log เพราะยังไม่ได้ตั้งค่า SMTP */

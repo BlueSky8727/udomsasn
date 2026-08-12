@@ -24,6 +24,7 @@ import { IsEnum, IsObject, IsOptional, IsString, MaxLength } from 'class-validat
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MediaService, type MediaInput } from './media.service';
+import { removeStoredFiles, validateUploadedFiles } from './upload-security';
 
 const MIME_BY_EXTENSION: Record<string, readonly string[]> = {
   '.pdf': ['application/pdf'],
@@ -86,15 +87,27 @@ export class MediaController {
   @UseGuards(JwtAuthGuard)
   @Post()
   @UseInterceptors(FilesInterceptor('files', 10, uploadOptions))
-  create(@Req() request: AuthenticatedRequest, @Body() body: Record<string, unknown>, @UploadedFiles() files: Express.Multer.File[] = []) {
-    return this.media.create(request.user, metadata(body), files);
+  async create(@Req() request: AuthenticatedRequest, @Body() body: Record<string, unknown>, @UploadedFiles() files: Express.Multer.File[] = []) {
+    try {
+      await validateUploadedFiles(files);
+      return await this.media.create(request.user, metadata(body), files);
+    } catch (error) {
+      await removeStoredFiles(files.map((file) => file.path));
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   @UseInterceptors(FilesInterceptor('files', 10, uploadOptions))
-  update(@Req() request: AuthenticatedRequest, @Param('id') id: string, @Body() body: Record<string, unknown>, @UploadedFiles() files: Express.Multer.File[] = []) {
-    return this.media.update(request.user, id, metadata(body), files);
+  async update(@Req() request: AuthenticatedRequest, @Param('id') id: string, @Body() body: Record<string, unknown>, @UploadedFiles() files: Express.Multer.File[] = []) {
+    try {
+      await validateUploadedFiles(files);
+      return await this.media.update(request.user, id, metadata(body), files);
+    } catch (error) {
+      await removeStoredFiles(files.map((file) => file.path));
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard)

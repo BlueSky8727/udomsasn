@@ -67,7 +67,7 @@ export function VerifyEmailClient({ token }: { token: string | null }) {
       {state.kind !== 'working' && (
         <Link
           href="/login"
-          className="mt-6 inline-flex h-11 items-center rounded-xl bg-brand px-5 text-sm font-semibold text-brand-contrast transition hover:bg-brand-strong"
+          className="mt-6 inline-flex h-11 items-center rounded-lg bg-coral px-5 text-sm font-semibold text-white transition hover:bg-coral-strong"
         >
           ไปหน้าเข้าสู่ระบบ
         </Link>

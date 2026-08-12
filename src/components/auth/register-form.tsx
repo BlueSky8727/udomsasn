@@ -224,7 +224,7 @@ export function RegisterForm({ onSwitchToLogin, onVerified }: RegisterFormProps)
           <button
             type="submit"
             disabled={verifying || code.length !== 6}
-            className="mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-sm font-semibold text-brand-contrast shadow-lg shadow-brand/15 transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-45"
+            className="mt-4 flex h-12 w-full items-center justify-center rounded-lg bg-coral text-sm font-semibold text-white shadow-lg shadow-coral/15 transition hover:bg-coral-strong disabled:cursor-not-allowed disabled:opacity-45"
           >
             {verifying ? 'กำลังตรวจสอบรหัส...' : 'ยืนยันอีเมล'}
           </button>
@@ -413,7 +413,7 @@ export function RegisterForm({ onSwitchToLogin, onVerified }: RegisterFormProps)
       <button
         type="submit"
         disabled={submitting}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-contrast shadow-lg shadow-brand/15 transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-coral text-sm font-semibold text-white shadow-lg shadow-coral/15 transition hover:bg-coral-strong disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? 'กำลังสมัคร...' : 'สมัครสมาชิก'}
       </button>

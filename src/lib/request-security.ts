@@ -34,6 +34,9 @@ export function isSameOriginRequest(request: Request): boolean {
 }
 
 function requestAddress(request: Request): string {
+  // เชื่อ forwarding headers เฉพาะเมื่อ deployment ยืนยันว่า reverse proxy
+  // เขียนทับ header จากผู้ใช้แล้วเท่านั้น
+  if (process.env.TRUST_PROXY_HEADERS !== 'true') return 'untrusted-proxy';
   return (
     request.headers.get('cf-connecting-ip') ??
     request.headers.get('x-real-ip') ??

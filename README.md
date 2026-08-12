@@ -35,6 +35,14 @@ npm run dev
 
 Frontend อยู่ที่ `http://localhost:3000` และ Backend อยู่ที่ `http://localhost:4000/api`
 
+ถ้า Command Prompt บน Windows หา `npm` ไม่เจอ ให้เรียกไฟล์โดยตรง:
+
+```cmd
+"C:\Program Files\nodejs\npm.cmd" run dev
+cd backend
+"C:\Program Files\nodejs\npm.cmd" run start:dev
+```
+
 บัญชีตัวอย่างใช้รหัสผ่าน `Udomsasn@2026`:
 
 - `teacher@udomsasn.ac.th`
@@ -51,4 +59,11 @@ npm run build
 cd backend && npm run build
 ```
 
-ไฟล์สื่ออยู่ใน private upload directory และดาวน์โหลดผ่าน API ที่ตรวจสิทธิ์ทุกครั้ง ผล AI เก็บแยกใน `AiReview` และไม่มีสิทธิ์เปลี่ยนสถานะสื่อ
+Integration tests ของ backend ต้องใช้ฐานข้อมูลทดสอบแยกต่างหาก:
+
+```bash
+cd backend
+TEST_DATABASE_URL=postgresql://... npm run test:integration
+```
+
+ไฟล์สื่ออยู่ใน private upload directory ตรวจทั้ง metadata และ file signature และดาวน์โหลดผ่าน API ที่ตรวจสิทธิ์ทุกครั้ง ผล AI เก็บแยกใน `AiReview` และไม่มีสิทธิ์เปลี่ยนสถานะสื่อ

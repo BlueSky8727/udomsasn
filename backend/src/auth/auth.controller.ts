@@ -3,8 +3,11 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
+  Inject,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Req,
   Res,
@@ -14,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UserRole } from '@prisma/client';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
@@ -33,6 +36,8 @@ import { diskStorage } from 'multer';
 import { AuthService } from './auth.service';
 import type { AuthenticatedRequest } from './auth.types';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { RateLimitService } from './rate-limit.service';
+import { removeStoredFiles, validateUploadedFiles } from '../media/upload-security';
 
 const AVATAR_MIME_BY_EXTENSION: Record<string, readonly string[]> = {
   '.png': ['image/png'],
@@ -111,6 +116,19 @@ class RegisterDto {
   password!: string;
 }
 
+class UpdateProfileDto {
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MinLength(3, { message: 'กรอกชื่อ-นามสกุลให้ครบ' })
+  @MaxLength(120)
+  name!: string;
+
+  @Transform(({ value }) => (typeof value === 'string' ? value.replace(/[^0-9]/g, '') : value))
+  @IsString()
+  @Matches(/^[0-9]{9,10}$/, { message: 'เบอร์โทรต้องเป็นตัวเลข 9-10 หลัก' })
+  phone!: string;
+}
+
 class VerifyEmailDto {
   @IsString()
   @MaxLength(200)
@@ -162,43 +180,81 @@ class ResetPasswordDto {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    @Inject(AuthService)
+    private readonly auth: AuthService,
+    @Inject(RateLimitService)
+    private readonly rateLimit: RateLimitService,
+  ) {}
+
+  private async throttle(
+    request: Request,
+    scope: string,
+    identity: string,
+    limit: number,
+    windowMs = 10 * 60 * 1_000,
+  ): Promise<void> {
+    const address = request.ip || request.socket.remoteAddress || 'unknown';
+    const result = await this.rateLimit.consume(scope, `${address}:${identity}`, limit, windowMs);
+    if (!result.allowed) {
+      throw new HttpException(
+        {
+          message: 'ทำรายการถี่เกินไป กรุณารอสักครู่แล้วลองใหม่',
+          retryAfterSeconds: result.retryAfterSeconds,
+        },
+        429,
+      );
+    }
+  }
 
   @Post('login')
-  login(@Body() body: LoginDto) {
+  async login(@Req() request: Request, @Body() body: LoginDto) {
+    await this.throttle(request, 'login', body.email.trim().toLowerCase(), 10);
     return this.auth.login(body.email, body.password, body.role);
   }
 
   @Post('register')
   @UseInterceptors(FileInterceptor('avatar', avatarUpload))
-  register(@Body() body: RegisterDto, @UploadedFile() avatar?: Express.Multer.File) {
+  async register(@Req() request: Request, @Body() body: RegisterDto, @UploadedFile() avatar?: Express.Multer.File) {
     if (!avatar) throw new BadRequestException('กรุณาแนบรูปโปรไฟล์');
-    // ค่าถูก trim / ตัดตัวคั่น / แปลงเป็นตัวพิมพ์เล็กมาแล้วตั้งแต่ตอน validate
-    return this.auth.register(body, avatar.path);
+    try {
+      await validateUploadedFiles([avatar]);
+      await this.throttle(request, 'register', body.email.trim().toLowerCase(), 5);
+      // ค่าถูก trim / ตัดตัวคั่น / แปลงเป็นตัวพิมพ์เล็กมาแล้วตั้งแต่ตอน validate
+      return await this.auth.register(body, avatar.path);
+    } catch (error) {
+      await removeStoredFiles([avatar.path]);
+      throw error;
+    }
   }
 
   @Post('verify-email')
-  verifyEmail(@Body() body: VerifyEmailDto) {
+  async verifyEmail(@Req() request: Request, @Body() body: VerifyEmailDto) {
+    await this.throttle(request, 'verify-email', body.token, 20);
     return this.auth.verifyEmail(body.token);
   }
 
   @Post('verify-code')
-  verifyCode(@Body() body: VerifyCodeDto) {
+  async verifyCode(@Req() request: Request, @Body() body: VerifyCodeDto) {
+    await this.throttle(request, 'verify-code', body.email, 8);
     return this.auth.verifyCode(body.email, body.code);
   }
 
   @Post('resend-verification')
-  resend(@Body() body: ResendDto) {
+  async resend(@Req() request: Request, @Body() body: ResendDto) {
+    await this.throttle(request, 'resend-verification', body.email.trim().toLowerCase(), 3);
     return this.auth.resendVerification(body.email);
   }
 
   @Post('forgot-password')
-  forgotPassword(@Body() body: ForgotPasswordDto) {
+  async forgotPassword(@Req() request: Request, @Body() body: ForgotPasswordDto) {
+    await this.throttle(request, 'forgot-password', body.email, 5);
     return this.auth.forgotPassword(body.email);
   }
 
   @Post('reset-password')
-  resetPassword(@Body() body: ResetPasswordDto) {
+  async resetPassword(@Req() request: Request, @Body() body: ResetPasswordDto) {
+    await this.throttle(request, 'reset-password', body.email, 8);
     return this.auth.resetPassword(body.email, body.code, body.password);
   }
 
@@ -206,6 +262,24 @@ export class AuthController {
   @Get('me')
   me(@Req() request: AuthenticatedRequest) {
     return this.auth.me(request.user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  @UseInterceptors(FileInterceptor('avatar', avatarUpload))
+  async updateMe(
+    @Req() request: AuthenticatedRequest,
+    @Body() body: UpdateProfileDto,
+    @UploadedFile() avatar?: Express.Multer.File,
+  ) {
+    try {
+      if (avatar) await validateUploadedFiles([avatar]);
+      await this.throttle(request, 'update-profile', request.user.sub, 10);
+      return await this.auth.updateProfile(request.user.sub, body, avatar?.path ?? null);
+    } catch (error) {
+      if (avatar) await removeStoredFiles([avatar.path]);
+      throw error;
+    }
   }
 
   /**

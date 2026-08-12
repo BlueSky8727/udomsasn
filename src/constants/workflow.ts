@@ -1,3 +1,8 @@
+import {
+  STATUS_LABELS as SHARED_STATUS_LABELS,
+  WORKFLOW_RULES,
+} from '@udomsasn/workflow';
+
 /**
  * workflow.ts — จุดตัดสินใจเดียวของการเปลี่ยนสถานะสื่อทั้งระบบ
  *
@@ -29,17 +34,7 @@ export type MediaStatus = (typeof MEDIA_STATUS)[keyof typeof MEDIA_STATUS];
 export const MEDIA_STATUS_LIST = Object.values(MEDIA_STATUS) as readonly MediaStatus[];
 
 /** ข้อความสถานะสำหรับแสดงบนหน้าจอ (กฎเหล็กข้อ 9: UI เป็นภาษาไทย) */
-export const STATUS_LABELS: Record<MediaStatus, string> = {
-  DRAFT: 'ร่าง',
-  PENDING: 'รอตรวจโดยกลุ่มสาระ',
-  IN_REVIEW: 'กลุ่มสาระกำลังตรวจ',
-  ACADEMIC_REVIEW: 'รอตรวจโดยหัวหน้าวิชาการ',
-  REVISION: 'ให้แก้ไข',
-  ACADEMIC_REVISION: 'แก้ไขเล็กน้อย',
-  APPROVED: 'เผยแพร่แล้ว',
-  REJECTED: 'ไม่ผ่าน',
-  ARCHIVED: 'ถอดออกจากคลัง',
-};
+export const STATUS_LABELS: Record<MediaStatus, string> = SHARED_STATUS_LABELS;
 
 export const STATUS_DESCRIPTIONS: Record<MediaStatus, string> = {
   DRAFT: 'เจ้าของยังแก้ไขได้ ยังไม่เข้าสู่กระบวนการตรวจ',
@@ -61,6 +56,7 @@ export const EDITABLE_BY_OWNER_STATUSES: readonly MediaStatus[] = [
   MEDIA_STATUS.DRAFT,
   MEDIA_STATUS.REVISION,
   MEDIA_STATUS.ACADEMIC_REVISION,
+  MEDIA_STATUS.ARCHIVED,
 ];
 
 /** กฎเหล็กข้อ 5: ลบถาวรได้เฉพาะ DRAFT เท่านั้น */
@@ -89,13 +85,6 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   ACADEMIC_HEAD: 'หัวหน้าวิชาการ',
   ADMIN: 'ผู้ดูแลระบบ',
 };
-
-/** เฉพาะอาจารย์เท่านั้นที่เป็นเจ้าของ สร้าง แก้ไข และส่งสื่อได้ */
-const OWNER_CAPABLE_ROLES: readonly UserRole[] = [USER_ROLE.TEACHER];
-
-/** รอบแรกและรอบสุดท้ายเป็นคนละอำนาจตัดสิน */
-const SUBJECT_REVIEW_ROLES: readonly UserRole[] = [USER_ROLE.REVIEWER];
-const ACADEMIC_REVIEW_ROLES: readonly UserRole[] = [USER_ROLE.ACADEMIC_HEAD];
 
 /* ------------------------------------------------------------------ */
 /* นิยาม transition                                                    */
@@ -135,149 +124,11 @@ export type TransitionRule = {
   intent: 'primary' | 'neutral' | 'warning' | 'danger';
 };
 
-const rule = (
-  r: Partial<TransitionRule> &
-    Pick<TransitionRule, 'from' | 'to' | 'roles' | 'label' | 'description' | 'intent'>,
-): TransitionRule => ({
-  ownerOnly: false,
-  assigneeOnly: false,
-  requiresReason: false,
-  requiresComment: false,
-  requiresUnassigned: false,
-  requiresCompleteMetadata: false,
-  requiresFile: false,
-  requiresReviewComplete: false,
-  createsNewVersion: false,
-  ...r,
-});
-
 /**
  * ตาราง transition ทั้งหมดของระบบ
  * เส้นทางใดไม่อยู่ในตารางนี้ = ปฏิเสธ ไม่มีข้อยกเว้น
  */
-export const TRANSITIONS: readonly TransitionRule[] = [
-  rule({
-    from: MEDIA_STATUS.DRAFT,
-    to: MEDIA_STATUS.PENDING,
-    roles: OWNER_CAPABLE_ROLES,
-    ownerOnly: true,
-    requiresCompleteMetadata: true,
-    requiresFile: true,
-    label: 'ส่งให้หัวหน้ากลุ่มสาระตรวจ',
-    description: 'ส่งสื่อเข้าคิวของกลุ่มสาระที่เลือกให้หัวหน้ากลุ่มสาระพิจารณา',
-    intent: 'primary',
-  }),
-  rule({
-    from: MEDIA_STATUS.PENDING,
-    to: MEDIA_STATUS.IN_REVIEW,
-    roles: SUBJECT_REVIEW_ROLES,
-    requiresUnassigned: true,
-    label: 'รับเรื่องตรวจ',
-    description: 'รับสื่อชิ้นนี้มาตรวจ คนอื่นจะรับซ้ำไม่ได้',
-    intent: 'primary',
-  }),
-  rule({
-    from: MEDIA_STATUS.IN_REVIEW,
-    to: MEDIA_STATUS.PENDING,
-    roles: SUBJECT_REVIEW_ROLES,
-    assigneeOnly: true,
-    label: 'คืนคิว',
-    description: 'ปล่อยสื่อกลับเข้าคิวให้ผู้ตรวจคนอื่นรับต่อ',
-    intent: 'neutral',
-  }),
-  rule({
-    from: MEDIA_STATUS.IN_REVIEW,
-    to: MEDIA_STATUS.ACADEMIC_REVIEW,
-    roles: SUBJECT_REVIEW_ROLES,
-    assigneeOnly: true,
-    requiresReviewComplete: true,
-    label: 'ส่งต่อหัวหน้าวิชาการ',
-    description: 'ตรวจครบทุกหัวข้อแล้ว ส่งต่อให้หัวหน้าวิชาการตรวจขั้นสุดท้าย',
-    intent: 'primary',
-  }),
-  rule({
-    from: MEDIA_STATUS.IN_REVIEW,
-    to: MEDIA_STATUS.REVISION,
-    roles: SUBJECT_REVIEW_ROLES,
-    assigneeOnly: true,
-    requiresComment: true,
-    label: 'ส่งกลับให้อาจารย์แก้ไข',
-    description: 'ส่งกลับให้เจ้าของแก้ ต้องระบุจุดที่ต้องแก้อย่างน้อย 1 ข้อ',
-    intent: 'warning',
-  }),
-  rule({
-    from: MEDIA_STATUS.IN_REVIEW,
-    to: MEDIA_STATUS.REJECTED,
-    roles: SUBJECT_REVIEW_ROLES,
-    assigneeOnly: true,
-    requiresReason: true,
-    label: 'ไม่ผ่าน',
-    description: 'ปิดเรื่อง ไม่นำเข้าคลัง ต้องระบุเหตุผล',
-    intent: 'danger',
-  }),
-  rule({
-    from: MEDIA_STATUS.REVISION,
-    to: MEDIA_STATUS.PENDING,
-    roles: OWNER_CAPABLE_ROLES,
-    ownerOnly: true,
-    requiresCompleteMetadata: true,
-    requiresFile: true,
-    createsNewVersion: true,
-    label: 'ส่งฉบับแก้ไข',
-    description: 'ส่งกลับเข้าคิวเป็น version ใหม่ ไฟล์เดิมยังถูกเก็บไว้',
-    intent: 'primary',
-  }),
-  rule({
-    from: MEDIA_STATUS.ACADEMIC_REVIEW,
-    to: MEDIA_STATUS.APPROVED,
-    roles: ACADEMIC_REVIEW_ROLES,
-    label: 'อนุมัติผ่าน',
-    description: 'หัวหน้าวิชาการยืนยันผลขั้นสุดท้าย แจ้งผลกลับให้อาจารย์ และเผยแพร่สื่อเข้าคลัง',
-    intent: 'primary',
-  }),
-  rule({
-    from: MEDIA_STATUS.ACADEMIC_REVIEW,
-    to: MEDIA_STATUS.ACADEMIC_REVISION,
-    roles: ACADEMIC_REVIEW_ROLES,
-    requiresComment: true,
-    label: 'ส่งกลับแก้ไขเล็กน้อย',
-    description: 'ส่งกลับให้อาจารย์แก้ไขจุดเล็กน้อย พร้อมคอมเมนต์รายหัวข้อ',
-    intent: 'warning',
-  }),
-  rule({
-    from: MEDIA_STATUS.ACADEMIC_REVISION,
-    to: MEDIA_STATUS.ACADEMIC_REVIEW,
-    roles: OWNER_CAPABLE_ROLES,
-    ownerOnly: true,
-    requiresCompleteMetadata: true,
-    requiresFile: true,
-    createsNewVersion: true,
-    label: 'ส่งฉบับแก้ไขให้หัวหน้าวิชาการ',
-    description: 'ส่งเวอร์ชันใหม่กลับไปให้หัวหน้าวิชาการตรวจขั้นสุดท้ายโดยไม่ย้อนกลับกลุ่มสาระ',
-    intent: 'primary',
-  }),
-  rule({
-    from: MEDIA_STATUS.APPROVED,
-    to: MEDIA_STATUS.ARCHIVED,
-    roles: [USER_ROLE.ACADEMIC_HEAD],
-    requiresReason: true,
-    label: 'ถอดออกจากคลัง',
-    description: 'นำออกจากผลค้นหา ต้องระบุเหตุผล',
-    intent: 'danger',
-  }),
-  rule({
-    from: MEDIA_STATUS.ARCHIVED,
-    to: MEDIA_STATUS.PENDING,
-    roles: OWNER_CAPABLE_ROLES,
-    ownerOnly: true,
-    requiresCompleteMetadata: true,
-    requiresFile: true,
-    createsNewVersion: true,
-    label: 'ส่งตรวจอีกครั้ง',
-    description: 'ส่งสื่อที่ถูกถอดกลับเข้าคิวเป็น version ใหม่',
-    intent: 'primary',
-  }),
-];
+export const TRANSITIONS: readonly TransitionRule[] = WORKFLOW_RULES;
 
 /* ------------------------------------------------------------------ */
 /* บริบทที่ใช้ตัดสิน                                                    */

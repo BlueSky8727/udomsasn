@@ -18,15 +18,15 @@ export async function POST(request: Request) {
     if (!isSameOriginRequest(request)) {
       return NextResponse.json({ error: 'ไม่อนุญาตคำขอจากเว็บไซต์อื่น' }, { status: 403 });
     }
-    // รหัสมีแค่ 6 หลัก ต้องกันการไล่ยิงจาก IP เดียวเพิ่มอีกชั้นนอกเหนือจากตัวนับใน backend
-    const limit = takeRateLimit(request, 'auth-verify-code', 15, 10 * 60 * 1000);
+    const body = VerifyCodeBody.parse(await readJsonBody(request, 4 * 1024));
+    // รหัสมีแค่ 6 หลัก ต้องกันการไล่ยิงเพิ่มอีกชั้นนอกเหนือจากตัวนับใน backend
+    const limit = takeRateLimit(request, `auth-verify-code:${body.email.toLowerCase()}`, 15, 10 * 60 * 1000);
     if (!limit.allowed) {
       return NextResponse.json(
         { error: `กรอกรหัสถี่เกินไป กรุณารออีก ${limit.retryAfterSeconds} วินาที` },
         { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
       );
     }
-    const body = VerifyCodeBody.parse(await readJsonBody(request, 4 * 1024));
     const backendResponse = await fetch(`${BACKEND_URL}/auth/verify-code`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

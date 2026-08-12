@@ -2,6 +2,10 @@ import { readFile } from 'node:fs/promises';
 import { inflateRawSync, inflateSync } from 'node:zlib';
 
 const MAX_TEXT = 60_000;
+const MAX_ARCHIVE_ENTRIES = 256;
+const MAX_ENTRY_OUTPUT_BYTES = 8 * 1024 * 1024;
+const MAX_TOTAL_OUTPUT_BYTES = 24 * 1024 * 1024;
+const MAX_PDF_STREAM_OUTPUT_BYTES = 8 * 1024 * 1024;
 
 function decodeXml(text: string): string {
   return text
@@ -20,12 +24,13 @@ function decodeXml(text: string): string {
 
 function zipEntries(buffer: Buffer): Map<string, Buffer> {
   const entries = new Map<string, Buffer>();
+  let totalOutputBytes = 0;
   let eocd = -1;
   for (let index = buffer.length - 22; index >= Math.max(0, buffer.length - 65_557); index -= 1) {
     if (buffer.readUInt32LE(index) === 0x06054b50) { eocd = index; break; }
   }
   if (eocd < 0) return entries;
-  const total = buffer.readUInt16LE(eocd + 10);
+  const total = Math.min(buffer.readUInt16LE(eocd + 10), MAX_ARCHIVE_ENTRIES);
   let offset = buffer.readUInt32LE(eocd + 16);
   for (let index = 0; index < total && offset + 46 <= buffer.length; index += 1) {
     if (buffer.readUInt32LE(offset) !== 0x02014b50) break;
@@ -35,14 +40,24 @@ function zipEntries(buffer: Buffer): Map<string, Buffer> {
     const extraLength = buffer.readUInt16LE(offset + 30);
     const commentLength = buffer.readUInt16LE(offset + 32);
     const localOffset = buffer.readUInt32LE(offset + 42);
+    if (offset + 46 + nameLength + extraLength + commentLength > buffer.length) break;
+    if (localOffset + 30 > buffer.length) break;
     const name = buffer.subarray(offset + 46, offset + 46 + nameLength).toString('utf8');
     const localNameLength = buffer.readUInt16LE(localOffset + 26);
     const localExtraLength = buffer.readUInt16LE(localOffset + 28);
     const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+    if (dataStart > buffer.length || dataStart + compressedSize > buffer.length) break;
     const compressed = buffer.subarray(dataStart, dataStart + compressedSize);
     try {
-      if (method === 0) entries.set(name, compressed);
-      if (method === 8) entries.set(name, inflateRawSync(compressed));
+      let output: Buffer | undefined;
+      if (method === 0 && compressed.length <= MAX_ENTRY_OUTPUT_BYTES) output = compressed;
+      if (method === 8) {
+        output = inflateRawSync(compressed, { maxOutputLength: MAX_ENTRY_OUTPUT_BYTES });
+      }
+      if (output && totalOutputBytes + output.length <= MAX_TOTAL_OUTPUT_BYTES) {
+        entries.set(name, output);
+        totalOutputBytes += output.length;
+      }
     } catch {
       // ข้าม entry ที่เสียหาย แต่ยังสกัด entry อื่นต่อได้
     }
@@ -75,7 +90,12 @@ function pdfText(buffer: Buffer): string {
   const raw = buffer.toString('latin1');
   for (const match of raw.matchAll(/<<(.*?)>>\s*stream\r?\n([\s\S]*?)\r?\nendstream/g)) {
     if (!/FlateDecode/.test(match[1])) continue;
-    try { chunks.push(...extractPdfStrings(inflateSync(Buffer.from(match[2], 'latin1')))); } catch { /* ข้าม stream ที่ถอดไม่ได้ */ }
+    try {
+      const inflated = inflateSync(Buffer.from(match[2], 'latin1'), {
+        maxOutputLength: MAX_PDF_STREAM_OUTPUT_BYTES,
+      });
+      chunks.push(...extractPdfStrings(inflated));
+    } catch { /* ข้าม stream ที่ถอดไม่ได้หรือขยายใหญ่เกินกำหนด */ }
   }
   return chunks.join('\n').replace(/\s+\n/g, '\n').trim().slice(0, MAX_TEXT);
 }

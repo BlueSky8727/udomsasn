@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import type { User, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { createHash, randomBytes, randomInt } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { unlink } from 'node:fs/promises';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,6 +20,11 @@ export type RegisterInput = {
   email: string;
   phone: string;
   password: string;
+};
+
+export type UpdateProfileInput = {
+  name: string;
+  phone: string;
 };
 
 /** อายุลิงก์และรหัสยืนยันอีเมล */
@@ -77,17 +82,23 @@ export class AuthService {
       await this.removeFile(avatarPath);
       throw new BadRequestException('อีเมลนี้ถูกใช้สมัครแล้ว');
     }
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        name: input.name.trim(),
-        phone: input.phone.trim(),
-        avatarPath,
-        passwordHash: await bcrypt.hash(input.password, 12),
-        role: 'TEACHER',
-        accountStatus: 'PENDING',
-      },
-    });
+    let user: User;
+    try {
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          name: input.name.trim(),
+          phone: input.phone.trim(),
+          avatarPath,
+          passwordHash: await bcrypt.hash(input.password, 12),
+          role: 'TEACHER',
+          accountStatus: 'PENDING',
+        },
+      });
+    } catch (error) {
+      await this.removeFile(avatarPath);
+      throw error;
+    }
     // ถ้าส่งอีเมลไม่ผ่าน ห้ามโยน error ทิ้ง เพราะบัญชีถูกสร้างไปแล้ว
     // ผู้สมัครจะสมัครซ้ำก็ไม่ได้ (อีเมลซ้ำ) และไม่รู้ว่าต้องทำอะไรต่อ
     // ให้บอกตามจริงว่าส่งไม่สำเร็จ แล้วให้กด "ส่งอีกครั้ง" แทน
@@ -167,7 +178,7 @@ export class AuthService {
       this.prisma.passwordResetToken.create({
         data: {
           userId: user.id,
-          codeHash: this.hashToken(code),
+          codeHash: this.hashCode(code),
           expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS),
         },
       }),
@@ -191,7 +202,7 @@ export class AuthService {
     if (token.attempts >= MAX_CODE_ATTEMPTS) {
       throw new BadRequestException('กรอกรหัสผิดหลายครั้งเกินไป กรุณาขอรหัสใหม่');
     }
-    if (token.codeHash !== this.hashToken(code.trim())) {
+    if (!this.matchesCode(token.codeHash, code.trim())) {
       const attempts = token.attempts + 1;
       await this.prisma.passwordResetToken.update({
         where: { id: token.id },
@@ -241,7 +252,7 @@ export class AuthService {
         data: {
           userId: user.id,
           tokenHash: this.hashToken(rawToken),
-          codeHash: this.hashToken(code),
+          codeHash: this.hashCode(code),
           expiresAt: new Date(Date.now() + VERIFICATION_TTL_MS),
         },
       }),
@@ -280,7 +291,7 @@ export class AuthService {
     if (token.attempts >= MAX_CODE_ATTEMPTS) {
       throw new BadRequestException('กรอกรหัสผิดหลายครั้งเกินไป กรุณากดขอรหัสใหม่');
     }
-    if (token.codeHash !== this.hashToken(code.trim())) {
+    if (!this.matchesCode(token.codeHash, code.trim())) {
       const attempts = token.attempts + 1;
       await this.prisma.emailVerificationToken.update({
         where: { id: token.id },
@@ -300,6 +311,25 @@ export class AuthService {
     return createHash('sha256').update(rawToken).digest('hex');
   }
 
+  /** OTP มีพื้นที่ค้นหาเล็ก จึงต้องใช้ HMAC พร้อม secret ไม่ใช่ hash เปล่า */
+  private hashCode(code: string): string {
+    const secret = process.env.CODE_HASH_SECRET ?? process.env.JWT_SECRET;
+    if (!secret || secret.length < 32) {
+      throw new Error('CODE_HASH_SECRET หรือ JWT_SECRET ต้องมีอย่างน้อย 32 ตัวอักษร');
+    }
+    return createHmac('sha256', secret).update(code).digest('hex');
+  }
+
+  /** รองรับโทเคนเก่าที่สร้างก่อนเปลี่ยนเป็น HMAC จนกว่าจะหมดอายุตาม TTL */
+  private matchesCode(storedHash: string, code: string): boolean {
+    const candidates = [this.hashCode(code), this.hashToken(code)];
+    return candidates.some((candidate) => {
+      const stored = Buffer.from(storedHash, 'hex');
+      const expected = Buffer.from(candidate, 'hex');
+      return stored.length === expected.length && timingSafeEqual(stored, expected);
+    });
+  }
+
   private async removeFile(path: string | null): Promise<void> {
     if (!path) return;
     await unlink(path).catch(() => undefined);
@@ -313,6 +343,29 @@ export class AuthService {
   async me(id: string): Promise<SafeUser> {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user || user.accountStatus !== 'ACTIVE') throw new UnauthorizedException();
+    return this.safe(user);
+  }
+
+  async updateProfile(
+    id: string,
+    input: UpdateProfileInput,
+    avatarPath: string | null,
+  ): Promise<SafeUser> {
+    const existing = await this.prisma.user.findUnique({ where: { id } });
+    if (!existing || existing.accountStatus !== 'ACTIVE') throw new UnauthorizedException();
+
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: {
+        name: input.name.trim(),
+        phone: input.phone.replace(/[^0-9]/g, ''),
+        ...(avatarPath ? { avatarPath } : {}),
+      },
+    });
+
+    if (avatarPath && existing.avatarPath && existing.avatarPath !== avatarPath) {
+      await this.removeFile(existing.avatarPath);
+    }
     return this.safe(user);
   }
 }

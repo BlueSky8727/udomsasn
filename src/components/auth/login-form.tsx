@@ -189,7 +189,7 @@ export function LoginForm({ verifiedEmail, resetEmail, onForgotPassword }: Login
         <button
           type="submit"
           disabled={submitting}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-brand-contrast shadow-lg shadow-brand/15 transition hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-coral text-sm font-semibold text-white shadow-lg shadow-coral/15 transition hover:bg-coral-strong disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting ? 'กำลังตรวจสอบ...' : 'เข้าสู่ระบบ'}
         </button>

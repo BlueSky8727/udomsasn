@@ -9,10 +9,11 @@ Browser
        └─ /api/ai/* เรียก OpenTyphoon และบันทึกผลกลับ backend
             └─ NestJS API
                  ├─ JWT guard + role/owner/assignee/department authorization
+                 ├─ PostgreSQL-backed rate limit สำหรับ auth API
                  ├─ Prisma transactions สำหรับ workflow และ status log
-                 ├─ private upload directory + guarded download
-                 ├─ document text extraction
+                 ├─ private upload directory + signature validation + guarded download
+                 ├─ bounded document text extraction
                  └─ PostgreSQL
 ```
 
-Browser input, metadata และข้อความจากไฟล์ถือเป็นข้อมูลที่ไม่น่าเชื่อถือเสมอ การตัดสินสิทธิ์อ่านจาก JWT และฐานข้อมูลฝั่ง NestJS เท่านั้น ผล AI ถูกบันทึกใน `AiReview` และไม่สามารถเปลี่ยน `Media.status` ได้
+Browser input, metadata และข้อความจากไฟล์ถือเป็นข้อมูลที่ไม่น่าเชื่อถือเสมอ JWT ใช้ยืนยันตัวตนเท่านั้น ส่วนตำแหน่งและสถานะบัญชีอ่านใหม่จากฐานข้อมูลทุกคำขอ ผล AI ถูกบันทึกใน `AiReview` และไม่สามารถเปลี่ยน `Media.status` ได้

@@ -62,7 +62,7 @@ AI เป็นแค่ผู้ช่วยคัดกรอง เขีย�
 
 ## ฐานข้อมูล
 
-12 Prisma models พร้อม authorization ที่ NestJS service layer — รายละเอียดอยู่ที่ [docs/schema.md](docs/schema.md)
+13 Prisma models พร้อม authorization ที่ NestJS service layer — รายละเอียดอยู่ที่ [docs/schema.md](docs/schema.md)
 
 ---
 

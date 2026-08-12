@@ -8,7 +8,11 @@ const ALLOWED_PREFIXES = ['media', 'reviews', 'users', 'analytics', 'notificatio
 async function forward(request: Request, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
   const root = path[0];
-  if (!root || !ALLOWED_PREFIXES.includes(root)) {
+  const isProfileEndpoint =
+    root === 'auth' &&
+    ((path[1] === 'me' && path.length === 2) ||
+      (path[1] === 'avatar' && path.length === 3));
+  if (!root || (!ALLOWED_PREFIXES.includes(root) && !isProfileEndpoint)) {
     return NextResponse.json({ error: 'ไม่อนุญาตปลายทางนี้' }, { status: 404 });
   }
   if (request.method !== 'GET' && !isSameOriginRequest(request)) {

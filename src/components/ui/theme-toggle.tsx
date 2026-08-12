@@ -53,7 +53,7 @@ const getSnapshot = (): Theme =>
 /** ตอนเรนเดอร์ฝั่งเซิร์ฟเวอร์ยังไม่รู้ธีมจริง ใช้ค่าเริ่มต้นไปก่อนแล้วค่อยอ่านของจริงหลัง hydrate */
 const getServerSnapshot = (): Theme => DEFAULT_THEME;
 
-export function ThemeToggle() {
+export function ThemeToggle({ variant = 'default' }: { variant?: 'default' | 'sidebar' }) {
   const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const goingDark = theme === 'light';
   const label = goingDark ? 'ธีมมืด' : 'ธีมสว่าง';
@@ -74,7 +74,11 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={`เปลี่ยนเป็น${label}`}
       title={`เปลี่ยนเป็น${label}`}
-      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:bg-panel hover:text-ink"
+      className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+        variant === 'sidebar'
+          ? 'text-white/70 hover:bg-white/10 hover:text-white'
+          : 'text-ink-muted hover:bg-panel hover:text-ink'
+      }`}
     >
       <svg
         viewBox="0 0 24 24"

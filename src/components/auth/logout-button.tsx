@@ -12,7 +12,13 @@ import { signOut } from '@/lib/auth-client';
  * signOut() เรียก `POST /api/auth/logout` เพื่อล้างคุกกี้ session ฝั่งเซิร์ฟเวอร์
  * ตัวปุ่มไม่ต้องรู้กลไกเบื้องหลัง ถ้าเปลี่ยนวิธีจัดการ session ให้แก้ที่ signOut() ที่เดียว
  */
-export function LogoutButton({ onDone }: { onDone?: () => void }) {
+export function LogoutButton({
+  onDone,
+  variant = 'default',
+}: {
+  onDone?: () => void;
+  variant?: 'default' | 'sidebar';
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -40,7 +46,11 @@ export function LogoutButton({ onDone }: { onDone?: () => void }) {
       type="button"
       onClick={handleClick}
       disabled={busy}
-      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink-muted transition-colors hover:bg-panel hover:text-status-rejected disabled:opacity-60"
+      className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors disabled:opacity-60 ${
+        variant === 'sidebar'
+          ? 'text-white/70 hover:bg-white/10 hover:text-white'
+          : 'text-ink-muted hover:bg-panel hover:text-status-rejected'
+      }`}
     >
       <Icon name="lock" className="size-[18px] shrink-0" />
       <span>{busy ? 'กำลังออกจากระบบ...' : 'ออกจากระบบ'}</span>

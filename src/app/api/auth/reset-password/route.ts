@@ -19,15 +19,15 @@ export async function POST(request: Request) {
     if (!isSameOriginRequest(request)) {
       return NextResponse.json({ error: 'ไม่อนุญาตคำขอจากเว็บไซต์อื่น' }, { status: 403 });
     }
+    const body = ResetBody.parse(await readJsonBody(request, 4 * 1024));
     // รหัสมีแค่ 6 หลัก และปลายทางนี้เปลี่ยนรหัสผ่านได้ ต้องกันการไล่ยิงเป็นพิเศษ
-    const limit = takeRateLimit(request, 'auth-reset', 15, 10 * 60 * 1000);
+    const limit = takeRateLimit(request, `auth-reset:${body.email.toLowerCase()}`, 15, 10 * 60 * 1000);
     if (!limit.allowed) {
       return NextResponse.json(
         { error: `กรอกรหัสถี่เกินไป กรุณารออีก ${limit.retryAfterSeconds} วินาที` },
         { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
       );
     }
-    const body = ResetBody.parse(await readJsonBody(request, 4 * 1024));
     const backendResponse = await fetch(`${BACKEND_URL}/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

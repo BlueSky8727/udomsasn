@@ -12,11 +12,14 @@ import {
   ReviewStage,
   UserRole,
 } from '@prisma/client';
+import { STATUS_LABELS } from '@udomsasn/workflow';
 import { existsSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 import type { JwtUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { extractTextFromFile } from './text-extractor';
+import { removeStoredFiles } from './upload-security';
+import { assertMediaTransition } from './workflow';
 
 const REVIEW_TOPIC_IDS = [
   'learning_objectives',
@@ -25,19 +28,6 @@ const REVIEW_TOPIC_IDS = [
   'assessment',
   'supporting_media',
 ] as const;
-
-/** ข้อความแจ้งเตือนถึงผู้ใช้เป็นภาษาไทย ต้องตรงกับ STATUS_LABELS ฝั่ง Next.js (กฎเหล็กข้อ 9) */
-const STATUS_LABELS: Record<MediaStatus, string> = {
-  DRAFT: 'ร่าง',
-  PENDING: 'รอตรวจโดยกลุ่มสาระ',
-  IN_REVIEW: 'กลุ่มสาระกำลังตรวจ',
-  ACADEMIC_REVIEW: 'รอตรวจโดยหัวหน้าวิชาการ',
-  REVISION: 'ให้แก้ไข',
-  ACADEMIC_REVISION: 'แก้ไขเล็กน้อย',
-  APPROVED: 'เผยแพร่แล้ว',
-  REJECTED: 'ไม่ผ่าน',
-  ARCHIVED: 'ถอดออกจากคลัง',
-};
 
 const mediaInclude = {
   owner: { select: { id: true, name: true, email: true, department: true } },
@@ -103,18 +93,44 @@ export class MediaService {
 
   private validateInput(input: MediaInput, requireComplete: boolean): void {
     if (!requireComplete) return;
-    const required = [input.title, input.description, input.subject, input.gradeLevel];
-    if (required.some((value) => !value?.trim())) {
+    if (!this.hasCompleteMetadata(input)) {
       throw new BadRequestException('กรอกชื่อ เนื้อหา วิชา และระดับชั้นให้ครบ');
-    }
-    if (!input.learningObjectives || Object.keys(input.learningObjectives).length === 0) {
-      throw new BadRequestException('กรอกจุดประสงค์การเรียนรู้ให้ครบ');
     }
   }
 
-  private assertCanRead(media: MediaRecord, user: JwtUser): void {
+  private hasCompleteMetadata(input: MediaInput): boolean {
+    const required = [input.title, input.description, input.subject, input.gradeLevel];
+    return !required.some((value) => !value?.trim()) &&
+      Boolean(
+        input.learningObjectives &&
+        typeof input.learningObjectives === 'object' &&
+        !Array.isArray(input.learningObjectives) &&
+        Object.keys(input.learningObjectives).length > 0,
+      );
+  }
+
+  private async assertCanRead(media: MediaRecord, user: JwtUser): Promise<void> {
     if (media.status === MediaStatus.APPROVED || user.role === UserRole.ACADEMIC_HEAD) return;
     if (user.role === UserRole.TEACHER && media.ownerId === user.sub) return;
+
+    if (user.role === UserRole.REVIEWER) {
+      const reviewer = await this.prisma.user.findUnique({
+        where: { id: user.sub },
+        select: { department: true },
+      });
+      const canReadQueueItem =
+        media.status === MediaStatus.PENDING && media.assigneeId === null;
+      const canReadAssignedItem =
+        media.status === MediaStatus.IN_REVIEW && media.assigneeId === user.sub;
+      if (
+        reviewer?.department &&
+        reviewer.department === media.subjectGroup &&
+        (canReadQueueItem || canReadAssignedItem)
+      ) {
+        return;
+      }
+    }
+
     throw new NotFoundException();
   }
 
@@ -122,6 +138,15 @@ export class MediaService {
     if (user.role !== UserRole.TEACHER) throw new ForbiddenException();
     this.validateInput(input, Boolean(input.submit));
     if (input.submit && files.length === 0) throw new BadRequestException('ต้องแนบไฟล์อย่างน้อย 1 ไฟล์');
+    if (input.submit) {
+      assertMediaTransition(MediaStatus.DRAFT, MediaStatus.PENDING, {
+        actorRole: user.role,
+        actorId: user.sub,
+        ownerId: user.sub,
+        hasCompleteMetadata: this.hasCompleteMetadata(input),
+        fileCount: files.length,
+      });
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const media = await tx.media.create({
@@ -177,7 +202,12 @@ export class MediaService {
       });
       if (!current) throw new NotFoundException();
       if (current.ownerId !== user.sub) throw new ForbiddenException();
-      if (!(<MediaStatus[]>[MediaStatus.DRAFT, MediaStatus.REVISION, MediaStatus.ACADEMIC_REVISION]).includes(current.status)) {
+      if (!(<MediaStatus[]>[
+        MediaStatus.DRAFT,
+        MediaStatus.REVISION,
+        MediaStatus.ACADEMIC_REVISION,
+        MediaStatus.ARCHIVED,
+      ]).includes(current.status)) {
         throw new BadRequestException('สถานะนี้แก้ไขไม่ได้');
       }
       const merged: MediaInput = {
@@ -216,6 +246,16 @@ export class MediaService {
       const nextVersion = input.submit && current.status !== MediaStatus.DRAFT
         ? current.version + 1
         : current.version;
+      if (input.submit) {
+        assertMediaTransition(current.status, target, {
+          actorRole: user.role,
+          actorId: user.sub,
+          ownerId: current.ownerId,
+          assigneeId: current.assigneeId,
+          hasCompleteMetadata: this.hasCompleteMetadata(merged),
+          fileCount: current.files.length + files.length,
+        });
+      }
       await tx.media.update({
         where: { id },
         data: {
@@ -263,15 +303,13 @@ export class MediaService {
   async one(id: string, user: JwtUser) {
     const media = await this.prisma.media.findUnique({ where: { id }, include: mediaInclude });
     if (!media) throw new NotFoundException();
-    if (media.status === MediaStatus.APPROVED && user.role === UserRole.TEACHER && media.ownerId !== user.sub) {
+    if (
+      media.status === MediaStatus.APPROVED &&
+      ((user.role === UserRole.TEACHER && media.ownerId !== user.sub) || user.role === UserRole.ADMIN)
+    ) {
       return this.prisma.media.findUniqueOrThrow({ where: { id }, include: publicMediaInclude });
     }
-    if (user.role === UserRole.REVIEWER && media.status !== MediaStatus.APPROVED) {
-      const account = await this.prisma.user.findUnique({ where: { id: user.sub }, select: { department: true } });
-      if (!account?.department || account.department !== media.subjectGroup) throw new NotFoundException();
-    } else {
-      this.assertCanRead(media, user);
-    }
+    await this.assertCanRead(media, user);
     return media;
   }
 
@@ -303,18 +341,23 @@ export class MediaService {
     return this.prisma.$transaction(async (tx) => {
       const media = await tx.media.findUnique({ where: { id }, include: { files: true } });
       if (!media) throw new NotFoundException();
+      assertMediaTransition(media.status, to, {
+        actorRole: user.role,
+        actorId: user.sub,
+        ownerId: media.ownerId,
+        assigneeId: media.assigneeId,
+        reason,
+        fileCount: media.files.length,
+      });
       if (media.status === MediaStatus.PENDING && to === MediaStatus.IN_REVIEW) {
-        if (user.role !== UserRole.REVIEWER || media.assigneeId) throw new ForbiddenException();
         const reviewer = await tx.user.findUnique({ where: { id: user.sub }, select: { department: true } });
         if (!reviewer?.department || reviewer.department !== media.subjectGroup) throw new ForbiddenException();
         return this.applyTransition(tx, media, user, to, reason, user.sub);
       }
       if (media.status === MediaStatus.IN_REVIEW && to === MediaStatus.PENDING) {
-        if (user.role !== UserRole.REVIEWER || media.assigneeId !== user.sub) throw new ForbiddenException();
         return this.applyTransition(tx, media, user, to, reason, null);
       }
       if (media.status === MediaStatus.APPROVED && to === MediaStatus.ARCHIVED) {
-        if (user.role !== UserRole.ACADEMIC_HEAD || !reason?.trim()) throw new ForbiddenException();
         return this.applyTransition(tx, media, user, to, reason, null);
       }
       throw new BadRequestException('การเปลี่ยนสถานะนี้ต้องทำผ่านขั้นตอนที่กำหนด');
@@ -365,10 +408,27 @@ export class MediaService {
         }
       }
 
-      let review = await tx.review.findFirst({ where: { mediaId, reviewerId: user.sub, stage } });
+      let review = await tx.review.findUnique({
+        where: {
+          mediaId_mediaVersion_reviewerId_stage: {
+            mediaId,
+            mediaVersion: media.version,
+            reviewerId: user.sub,
+            stage,
+          },
+        },
+      });
       review = review
         ? await tx.review.update({ where: { id: review.id }, data: { summary: payload.summary?.trim() } })
-        : await tx.review.create({ data: { mediaId, reviewerId: user.sub, stage, summary: payload.summary?.trim() } });
+        : await tx.review.create({
+            data: {
+              mediaId,
+              mediaVersion: media.version,
+              reviewerId: user.sub,
+              stage,
+              summary: payload.summary?.trim(),
+            },
+          });
 
       for (const topicId of REVIEW_TOPIC_IDS) {
         const result = payload.results?.[topicId];
@@ -385,20 +445,18 @@ export class MediaService {
       const items = await tx.reviewItem.findMany({ where: { reviewId: review.id } });
       const to = payload.to;
       if (!to) throw new BadRequestException('ไม่ได้ระบุผลการตัดสิน');
-      const allowedTargets: MediaStatus[] = isAcademic
-        ? [MediaStatus.APPROVED, MediaStatus.ACADEMIC_REVISION]
-        : [MediaStatus.ACADEMIC_REVIEW, MediaStatus.REVISION, MediaStatus.REJECTED];
-      if (!allowedTargets.includes(to)) throw new ForbiddenException();
       const completeResults = REVIEW_TOPIC_IDS.every((topicId) => items.some((item) => item.topicId === topicId && item.result));
       const commentCount = items.filter((item) => item.comment?.trim()).length;
-      if ((<MediaStatus[]>[MediaStatus.ACADEMIC_REVIEW, MediaStatus.APPROVED]).includes(to) && !completeResults) {
-        throw new BadRequestException('ต้องตรวจให้ครบทุกหัวข้อ');
-      }
-      if ((<MediaStatus[]>[MediaStatus.REVISION, MediaStatus.ACADEMIC_REVISION]).includes(to) && commentCount === 0) {
-        throw new BadRequestException('ต้องมีคอมเมนต์อย่างน้อย 1 หัวข้อ');
-      }
       const reason = payload.reason?.trim() || payload.summary?.trim();
-      if (to === MediaStatus.REJECTED && !reason) throw new BadRequestException('ต้องระบุเหตุผล');
+      assertMediaTransition(media.status, to, {
+        actorRole: user.role,
+        actorId: user.sub,
+        ownerId: media.ownerId,
+        assigneeId: media.assigneeId,
+        reason,
+        commentCount,
+        hasCompletedReview: completeResults,
+      });
 
       let decision: ReviewDecision;
       switch (to) {
@@ -418,24 +476,23 @@ export class MediaService {
   }
 
   async remove(id: string, user: JwtUser) {
-    const media = await this.prisma.media.findUnique({ where: { id } });
+    const media = await this.prisma.media.findUnique({
+      where: { id },
+      include: { files: { select: { path: true } } },
+    });
     if (!media) throw new NotFoundException();
     if (media.ownerId !== user.sub || user.role !== UserRole.TEACHER || media.status !== MediaStatus.DRAFT) {
       throw new ForbiddenException();
     }
     await this.prisma.media.delete({ where: { id } });
+    await removeStoredFiles(media.files.map((file) => file.path));
     return { ok: true };
   }
 
   async fileForDownload(mediaId: string, fileId: string, user: JwtUser) {
     const media = await this.prisma.media.findUnique({ where: { id: mediaId }, include: mediaInclude });
     if (!media) throw new NotFoundException();
-    if (user.role === UserRole.REVIEWER && media.status !== MediaStatus.APPROVED) {
-      const reviewer = await this.prisma.user.findUnique({ where: { id: user.sub }, select: { department: true } });
-      if (reviewer?.department !== media.subjectGroup) throw new NotFoundException();
-    } else {
-      this.assertCanRead(media, user);
-    }
+    await this.assertCanRead(media, user);
     const file = await this.prisma.mediaFile.findFirst({ where: { id: fileId, mediaId } });
     if (!file) throw new NotFoundException();
     const uploadRoot = resolve(process.env.UPLOAD_DIR ?? 'uploads');

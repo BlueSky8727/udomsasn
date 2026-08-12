@@ -44,31 +44,34 @@ export function AdminHome({
 
   return (
     <>
-      <section className="relative overflow-hidden rounded-[30px] border border-brand/15 bg-gradient-to-br from-brand/14 via-panel to-panel p-7 shadow-sm sm:p-9">
-        <div className="absolute -right-16 -top-20 size-72 rounded-full bg-brand/8 blur-2xl" />
+      <section className="relative overflow-hidden rounded-xl bg-gradient-to-r from-navy-deep via-navy to-brand p-7 text-white shadow-sm sm:p-8">
+        <span className="absolute inset-y-0 left-0 w-2 bg-coral" />
+        <div className="school-pattern pointer-events-none absolute inset-y-0 right-0 w-2/5 opacity-55" />
         <div className="relative grid gap-7 xl:grid-cols-[1.45fr_.8fr]">
           <div>
-            <Pill>แดชบอร์ดหัวหน้าวิชาการ</Pill>
+            <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/80">
+              แดชบอร์ดหัวหน้าวิชาการ
+            </span>
             <h1 className="mt-5 max-w-3xl text-3xl font-bold leading-tight tracking-[-.045em] sm:text-4xl">
               แต่งตั้งคนให้ถูกตำแหน่ง
               <br />
               ตรวจงานรอบสุดท้ายให้จบ
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-ink-muted">
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/70">
               ดูรายชื่อผู้สมัครทั้งหมด แต่งตั้งหัวหน้ากลุ่มสาระ และตรวจสื่อที่หัวหน้ากลุ่มสาระ
               ส่งต่อมา เมื่ออนุมัติแล้วระบบจะส่งผลกลับให้อาจารย์เจ้าของสื่อ
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/queue"
-                className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-contrast transition hover:bg-brand-strong"
+                className="inline-flex items-center gap-2 rounded-lg bg-coral px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-coral-strong"
               >
                 <Icon name="inbox" className="size-4" />
                 ตรวจงานที่ส่งต่อมา
               </Link>
               <Link
                 href="/admin"
-                className="inline-flex items-center gap-2 rounded-xl border border-line bg-panel/80 px-4 py-2.5 text-sm font-semibold transition hover:border-brand/30"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15"
               >
                 <Icon name="users" className="size-4" />
                 แต่งตั้งตำแหน่ง
@@ -76,15 +79,15 @@ export function AdminHome({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-line/80 bg-surface/70 p-5 backdrop-blur">
+          <div className="rounded-xl border border-white/15 bg-white/8 p-5 backdrop-blur">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <span className="grid size-10 place-items-center rounded-xl bg-status-approved/10 text-status-approved">
+                <span className="grid size-10 place-items-center rounded-lg bg-white/12 text-emerald-200">
                   <Icon name="check" />
                 </span>
                 <div>
                   <p className="text-sm font-bold">งานของคุณวันนี้</p>
-                  <p className="text-xs text-ink-faint">รายการที่ต้องแต่งตั้งหรือตัดสิน</p>
+                  <p className="text-xs text-white/60">รายการที่ต้องแต่งตั้งหรือตัดสิน</p>
                 </div>
               </div>
               <Pill tone={academicWaiting > 0 ? 'warn' : 'ok'}>
@@ -98,9 +101,9 @@ export function AdminHome({
                 ['กลุ่มสาระกำลังตรวจ', inReview],
                 ['ส่งกลับแก้ไข', revision],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-xl border border-line bg-panel p-3">
+                <div key={label} className="rounded-lg border border-white/10 bg-white/8 p-3">
                   <p className="text-2xl font-bold">{value}</p>
-                  <p className="mt-1 text-[11px] text-ink-faint">{label}</p>
+                  <p className="mt-1 text-[11px] text-white/60">{label}</p>
                 </div>
               ))}
             </div>

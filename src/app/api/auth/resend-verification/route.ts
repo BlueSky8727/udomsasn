@@ -15,15 +15,15 @@ export async function POST(request: Request) {
     if (!isSameOriginRequest(request)) {
       return NextResponse.json({ error: 'ไม่อนุญาตคำขอจากเว็บไซต์อื่น' }, { status: 403 });
     }
-    // ปลายทางนี้สั่งให้ระบบส่งอีเมล จึงต้องจำกัดจำนวนครั้งเข้มกว่าปกติ
-    const limit = takeRateLimit(request, 'auth-resend', 3, 10 * 60 * 1000);
+    const body = ResendBody.parse(await readJsonBody(request, 4 * 1024));
+    // backend มี shared limiter อีกชั้น; ชั้นนี้ลด request ซ้ำใน Next instance เดียวกัน
+    const limit = takeRateLimit(request, `auth-resend:${body.email.toLowerCase()}`, 3, 10 * 60 * 1000);
     if (!limit.allowed) {
       return NextResponse.json(
         { error: `ขอลิงก์ถี่เกินไป กรุณารออีก ${limit.retryAfterSeconds} วินาที` },
         { status: 429, headers: { 'Retry-After': String(limit.retryAfterSeconds) } },
       );
     }
-    const body = ResendBody.parse(await readJsonBody(request, 4 * 1024));
     const backendResponse = await fetch(`${BACKEND_URL}/auth/resend-verification`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
