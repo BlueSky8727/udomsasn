@@ -27,6 +27,9 @@ test('backend authorization, versioned reviews และ archived resubmission',
   await app.listen(0, '127.0.0.1');
   const baseUrl = await app.getUrl();
 
+  assert.equal((await fetch(`${baseUrl}/api/health/live`)).status, 200);
+  assert.equal((await fetch(`${baseUrl}/api/health/ready`)).status, 200);
+
   const clearDatabase = async () => {
     await prisma.rateLimitBucket.deleteMany();
     await prisma.reviewItem.deleteMany();
@@ -45,7 +48,7 @@ test('backend authorization, versioned reviews และ archived resubmission',
 
   const password = 'Integration@2026';
   const passwordHash = await bcrypt.hash(password, 4);
-  const createUser = (email: string, role: 'TEACHER' | 'REVIEWER' | 'ACADEMIC_HEAD', department?: string) =>
+  const createUser = (email: string, role: 'TEACHER' | 'REVIEWER' | 'ACADEMIC_HEAD' | 'ADMIN', department?: string) =>
     prisma.user.create({
       data: {
         email,
@@ -81,8 +84,21 @@ test('backend authorization, versioned reviews และ archived resubmission',
     const owner = await createUser('owner@test.local', 'TEACHER');
     const reviewer = await createUser('reviewer@test.local', 'REVIEWER', 'วิทยาศาสตร์');
     const otherReviewer = await createUser('other-reviewer@test.local', 'REVIEWER', 'วิทยาศาสตร์');
+    const admin = await createUser('admin@test.local', 'ADMIN');
     const ownerToken = await login(owner.email);
     const reviewerToken = await login(reviewer.email);
+    const adminToken = await login(admin.email);
+
+    const userSearchResponse = await fetch(
+      `${baseUrl}/api/users/search?q=owner&page=1&pageSize=1`,
+      authorized(adminToken),
+    );
+    assert.equal(userSearchResponse.status, 200);
+    const userSearch = await userSearchResponse.json() as { items: Array<{ email: string }>; total: number; totalPages: number };
+    assert.equal(userSearch.items.length, 1);
+    assert.equal(userSearch.items[0]?.email, owner.email);
+    assert.equal(userSearch.total, 1);
+    assert.equal(userSearch.totalPages, 1);
 
     // JWT ต้องใช้สถานะและตำแหน่งล่าสุดจากฐานข้อมูล
     await prisma.user.update({ where: { id: owner.id }, data: { accountStatus: 'DISABLED' } });
@@ -123,6 +139,20 @@ test('backend authorization, versioned reviews และ archived resubmission',
       },
     });
     assert.equal((await fetch(`${baseUrl}/api/media/${accessMedia.id}`, authorized(reviewerToken))).status, 404);
+
+    await prisma.media.create({
+      data: {
+        code: 'INT-PUBLIC', title: 'Public search target', description: 'approved media', subject: 'วิทยาศาสตร์',
+        subjectGroup: 'วิทยาศาสตร์', gradeLevel: 'ม.1', mediaType: 'เอกสาร', learningObjectives: { K: ['test'] },
+        tags: [], ownerId: owner.id, status: 'APPROVED',
+      },
+    });
+    const publicResponse = await fetch(`${baseUrl}/api/media/public?q=search%20target&page=1&pageSize=1`);
+    assert.equal(publicResponse.status, 200);
+    const publicPage = await publicResponse.json() as { items: Array<{ code: string }>; total: number; facets: { subjects: string[] } };
+    assert.equal(publicPage.items[0]?.code, 'INT-PUBLIC');
+    assert.equal(publicPage.total, 1);
+    assert.ok(publicPage.facets.subjects.includes('วิทยาศาสตร์'));
     await prisma.media.update({ where: { id: accessMedia.id }, data: { status: 'PENDING', reviewStage: 'SUBJECT_GROUP' } });
     assert.equal((await fetch(`${baseUrl}/api/media/${accessMedia.id}`, authorized(reviewerToken))).status, 200);
     await prisma.media.update({ where: { id: accessMedia.id }, data: { status: 'IN_REVIEW', assigneeId: otherReviewer.id } });
@@ -163,6 +193,19 @@ test('backend authorization, versioned reviews และ archived resubmission',
       (await prisma.review.findMany({ where: { mediaId: reviewMedia.id }, orderBy: { mediaVersion: 'asc' }, select: { mediaVersion: true } })).map((item) => item.mediaVersion),
       [1, 2],
     );
+    const completedReview = await prisma.review.findFirstOrThrow({
+      where: { mediaId: reviewMedia.id, completedAt: { not: null } },
+      orderBy: { mediaVersion: 'desc' },
+    });
+    await prisma.review.update({
+      where: { id: completedReview.id },
+      data: { createdAt: new Date((completedReview.completedAt?.getTime() ?? Date.now()) - 2 * 60 * 60 * 1_000) },
+    });
+    const analyticsResponse = await fetch(`${baseUrl}/api/analytics/summary`, authorized(reviewerToken));
+    assert.equal(analyticsResponse.status, 200);
+    const analytics = await analyticsResponse.json() as { averageReviewHours: number; timeline: unknown[] };
+    assert.ok(analytics.averageReviewHours > 0);
+    assert.ok(analytics.timeline.length > 0);
 
     // เจ้าของส่งสื่อ ARCHIVED กลับเข้าคิวได้และเพิ่ม version
     const archived = await prisma.media.create({

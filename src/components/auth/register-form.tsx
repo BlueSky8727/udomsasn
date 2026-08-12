@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { AvatarCropper } from '@/components/ui/avatar-cropper';
 import { Icon } from '@/components/ui/icons';
 import { register, resendVerification, verifyCode } from '@/lib/auth-client';
 
@@ -50,6 +51,9 @@ export function RegisterForm({ onSwitchToLogin, onVerified }: RegisterFormProps)
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [avatar, setAvatar] = useState<{ file: File; previewUrl: string } | null>(null);
+  /** ไฟล์ต้นฉบับก่อนครอบ เก็บไว้ให้กดปรับตำแหน่งซ้ำได้โดยไม่เสียคุณภาพเพิ่ม */
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
+  const [cropSource, setCropSource] = useState<File | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -81,11 +85,23 @@ export function RegisterForm({ onSwitchToLogin, onVerified }: RegisterFormProps)
       setFieldErrors((prev) => ({ ...prev, avatar: 'รูปโปรไฟล์ต้องมีขนาดไม่เกิน 2MB' }));
       return;
     }
-    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-    const previewUrl = URL.createObjectURL(file);
-    previewUrlRef.current = previewUrl;
     setFieldErrors((prev) => ({ ...prev, avatar: undefined }));
-    setAvatar({ file, previewUrl });
+    // เลือกไฟล์แล้วเข้าหน้าครอบรูปก่อน รูปที่ส่งจริงคือรูปที่ครอบเป็นสี่เหลี่ยมจัตุรัสแล้ว
+    setSourceFile(file);
+    setCropSource(file);
+  };
+
+  const applyCrop = (cropped: File) => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    const previewUrl = URL.createObjectURL(cropped);
+    previewUrlRef.current = previewUrl;
+    setCropSource(null);
+    setAvatar({ file: cropped, previewUrl });
+  };
+
+  const cancelCrop = () => {
+    setCropSource(null);
+    if (avatarInputRef.current) avatarInputRef.current.value = '';
   };
 
   const validate = (): FieldErrors => {
@@ -256,6 +272,10 @@ export function RegisterForm({ onSwitchToLogin, onVerified }: RegisterFormProps)
 
   return (
     <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
+      {cropSource && (
+        <AvatarCropper source={cropSource} shape="circle" onCancel={cancelCrop} onConfirm={applyCrop} />
+      )}
+
       <fieldset disabled={submitting} className="space-y-5">
         <div>
           <span className="block text-sm font-semibold">รูปโปรไฟล์</span>
@@ -270,16 +290,28 @@ export function RegisterForm({ onSwitchToLogin, onVerified }: RegisterFormProps)
               )}
             </span>
             <div className="min-w-0">
-              <button
-                type="button"
-                onClick={() => avatarInputRef.current?.click()}
-                className="inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-panel px-4 text-xs font-semibold transition hover:bg-panel-hover"
-              >
-                <Icon name="cloudUpload" className="size-4" />
-                {avatar ? 'เปลี่ยนรูป' : 'เลือกรูป'}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-panel px-4 text-xs font-semibold transition hover:bg-panel-hover"
+                >
+                  <Icon name="cloudUpload" className="size-4" />
+                  {avatar ? 'เปลี่ยนรูป' : 'เลือกรูป'}
+                </button>
+                {sourceFile && (
+                  <button
+                    type="button"
+                    onClick={() => setCropSource(sourceFile)}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-panel px-4 text-xs font-semibold transition hover:bg-panel-hover"
+                  >
+                    <Icon name="edit" className="size-4" />
+                    ปรับตำแหน่ง
+                  </button>
+                )}
+              </div>
               <p className="mt-1.5 truncate text-[11px] text-ink-faint">
-                {avatar ? avatar.file.name : 'PNG, JPG หรือ WebP ขนาดไม่เกิน 2MB'}
+                {avatar ? 'ครอบรูปแล้ว พร้อมส่ง' : 'PNG, JPG หรือ WebP ขนาดไม่เกิน 2MB'}
               </p>
             </div>
           </div>

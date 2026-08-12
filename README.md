@@ -59,6 +59,14 @@ npm run build
 cd backend && npm run build
 ```
 
+หลัง build และ seed ฐานข้อมูลแล้ว สามารถทดสอบหน้าเว็บจริงด้วย Chromium:
+
+```bash
+npm run test:e2e
+```
+
+Backend มี health check สำหรับระบบเฝ้าระวังที่ `GET /api/health/live` และตรวจความพร้อมของฐานข้อมูลที่ `GET /api/health/ready`
+
 Integration tests ของ backend ต้องใช้ฐานข้อมูลทดสอบแยกต่างหาก:
 
 ```bash

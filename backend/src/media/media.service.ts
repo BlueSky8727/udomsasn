@@ -82,6 +82,21 @@ export type ReviewPayload = {
   reason?: string;
 };
 
+export type PublicMediaQuery = {
+  q?: string;
+  subject?: string;
+  grade?: string;
+  page: number;
+  pageSize: number;
+};
+
+const csvValues = (value?: string) =>
+  value
+    ?.split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 20) ?? [];
+
 @Injectable()
 export class MediaService {
   constructor(private readonly prisma: PrismaService) {}
@@ -296,8 +311,55 @@ export class MediaService {
     return this.prisma.media.findMany({ where: { ownerId }, include: mediaInclude, orderBy: { updatedAt: 'desc' } });
   }
 
-  publicList() {
-    return this.prisma.media.findMany({ where: { status: MediaStatus.APPROVED }, include: publicMediaInclude, orderBy: { updatedAt: 'desc' } });
+  async publicList(query: PublicMediaQuery) {
+    const search = query.q?.trim();
+    const subjects = csvValues(query.subject);
+    const grades = csvValues(query.grade);
+    const where: Prisma.MediaWhereInput = {
+      status: MediaStatus.APPROVED,
+      ...(subjects.length ? { subject: { in: subjects } } : {}),
+      ...(grades.length ? { gradeLevel: { in: grades } } : {}),
+      ...(search
+        ? {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+              { subject: { contains: search, mode: 'insensitive' } },
+              { subjectGroup: { contains: search, mode: 'insensitive' } },
+              { gradeLevel: { contains: search, mode: 'insensitive' } },
+              { mediaType: { contains: search, mode: 'insensitive' } },
+              { owner: { name: { contains: search, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
+    };
+    const skip = (query.page - 1) * query.pageSize;
+    const [items, total, facetRows] = await Promise.all([
+      this.prisma.media.findMany({
+        where,
+        include: publicMediaInclude,
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take: query.pageSize,
+      }),
+      this.prisma.media.count({ where }),
+      this.prisma.media.findMany({
+        where: { status: MediaStatus.APPROVED },
+        select: { subject: true, gradeLevel: true },
+        distinct: ['subject', 'gradeLevel'],
+      }),
+    ]);
+    return {
+      items,
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
+      facets: {
+        subjects: [...new Set(facetRows.map((item) => item.subject))],
+        grades: [...new Set(facetRows.map((item) => item.gradeLevel))],
+      },
+    };
   }
 
   async one(id: string, user: JwtUser) {

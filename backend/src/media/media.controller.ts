@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UploadedFiles,
@@ -20,7 +21,8 @@ import { mkdirSync } from 'node:fs';
 import { extname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { diskStorage } from 'multer';
-import { IsEnum, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEnum, IsInt, IsObject, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MediaService, type MediaInput } from './media.service';
@@ -72,6 +74,34 @@ class AiReviewDto {
   result!: Record<string, unknown>;
 }
 
+class PublicMediaQueryDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  q?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1_000)
+  subject?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1_000)
+  grade?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  pageSize = 24;
+}
+
 function metadata(body: Record<string, unknown>): MediaInput {
   try {
     return (typeof body.metadata === 'string' ? JSON.parse(body.metadata) : body) as MediaInput;
@@ -117,8 +147,8 @@ export class MediaController {
   }
 
   @Get('public')
-  publicList() {
-    return this.media.publicList();
+  publicList(@Query() query: PublicMediaQueryDto) {
+    return this.media.publicList(query);
   }
 
   @UseGuards(JwtAuthGuard)

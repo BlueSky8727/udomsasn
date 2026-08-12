@@ -251,6 +251,9 @@ export function AdminHome({
                 </div>
               </div>
             ))}
+            {timeline.length === 0 && (
+              <p className="py-8 text-center text-xs text-ink-faint">ยังไม่มีเหตุการณ์ในประวัติการตรวจ</p>
+            )}
           </div>
         </SectionCard>
       </div>

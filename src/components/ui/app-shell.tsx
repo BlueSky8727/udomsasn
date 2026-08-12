@@ -11,6 +11,7 @@ import { ROLE_LABELS, type UserRole } from '@/constants/workflow';
 import { Icon } from './icons';
 import { SchoolLogo } from './school-logo';
 import { ThemeToggle } from './theme-toggle';
+import { avatarUrlFor, useViewer } from './viewer-context';
 
 export function AppShell({
   role,
@@ -24,6 +25,8 @@ export function AppShell({
   initialSearchQuery?: string;
 }) {
   const pathname = usePathname();
+  const viewer = useViewer();
+  const avatarUrl = avatarUrlFor(viewer);
   const [mobileOpen, setMobileOpen] = useState(false);
   const items = navItemsForRole(role);
   const activeItem = items.find((item) =>
@@ -185,8 +188,18 @@ export function AppShell({
             {role !== 'ADMIN' && <NotificationBell role={role} />}
             <span className="hidden h-8 w-px bg-line sm:block" />
             <Link href="/profile" className="flex items-center gap-2.5 rounded-lg p-1.5 transition hover:bg-surface">
-              <span className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-slate-200 to-slate-100 text-xs font-bold text-brand ring-1 ring-line">
-                {avatarLabel}
+              <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-slate-200 to-slate-100 text-xs font-bold text-brand ring-1 ring-line">
+                {avatarUrl ? (
+                  // รูปมาจาก proxy ของเรา ไม่ผ่าน next/image เพราะต้องส่ง cookie ไปตรวจสิทธิ์ก่อน
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt={`รูปโปรไฟล์ของ ${displayName}`}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  avatarLabel
+                )}
               </span>
               <span className="hidden min-w-0 text-left xl:block">
                 <span className="block max-w-36 truncate text-xs font-semibold text-ink">{displayName}</span>

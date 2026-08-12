@@ -7,7 +7,7 @@ import { RoleAssignmentPanel } from '@/components/admin/role-assignment-panel';
 import { USER_ROLE } from '@/constants/workflow';
 import { backendFetch } from '@/lib/backend';
 import { getViewerRole } from '@/lib/auth';
-import type { BackendUser } from '@/types/backend';
+import type { UserSearchPage } from '@/types/backend';
 
 /**
  * หน้าสมาชิกและตำแหน่ง
@@ -18,27 +18,46 @@ import type { BackendUser } from '@/types/backend';
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string | string[] }>;
+  searchParams: Promise<{ q?: string | string[]; page?: string | string[] }>;
 }) {
   const role = await getViewerRole();
   const canView: string[] = [USER_ROLE.ADMIN, USER_ROLE.ACADEMIC_HEAD];
   if (!canView.includes(role)) redirect('/forbidden');
   const canEdit = role === USER_ROLE.ADMIN;
-  const rawQuery = (await searchParams).q;
+  const params = await searchParams;
+  const rawQuery = params.q;
   const initialQuery = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery)?.trim().slice(0, 120) ?? '';
+  const rawPage = Array.isArray(params.page) ? params.page[0] : params.page;
+  const parsedPage = Number(rawPage ?? 1);
+  const requestedPage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
-  let users: BackendUser[] = [];
+  let data: UserSearchPage = {
+    items: [],
+    total: 0,
+    page: requestedPage,
+    pageSize: 25,
+    totalPages: 1,
+    summary: {
+      total: 0,
+      pending: 0,
+      assigned: 0,
+      active: 0,
+      unverified: 0,
+      pendingUsers: [],
+      activeByRole: { TEACHER: 0, REVIEWER: 0, ACADEMIC_HEAD: 0, ADMIN: 0 },
+    },
+  };
   try {
-    users = await backendFetch<BackendUser[]>('/users');
+    const query = new URLSearchParams({ page: String(requestedPage), pageSize: '25' });
+    if (initialQuery) query.set('q', initialQuery);
+    data = await backendFetch<UserSearchPage>(`/users/search?${query}`);
   } catch {
-    users = [];
+    // แสดงหน้าว่างพร้อมโครง UI เดิมเมื่อ backend ไม่พร้อม
   }
 
-  const pendingUsers = users.filter((user) => user.accountStatus === 'PENDING');
-  const pending = pendingUsers.length;
-  const assigned = users.filter(
-    (user) => user.accountStatus === 'ACTIVE' && user.role !== USER_ROLE.TEACHER,
-  ).length;
+  const users = data.items;
+  const pending = data.summary.pending;
+  const assigned = data.summary.assigned;
 
   return (
     <AppShell role={role} initialSearchQuery={initialQuery}>
@@ -62,10 +81,7 @@ export default async function AdminPage({
               มีผู้สมัครใหม่ {pending} คน รอแต่งตั้งตำแหน่ง
             </p>
             <p className="mt-1 text-xs leading-6 text-ink-muted">
-              {pendingUsers
-                .slice(0, 3)
-                .map((user) => user.name)
-                .join(' · ')}
+              {data.summary.pendingUsers.slice(0, 3).map((user) => user.name).join(' · ')}
               {pending > 3 ? ` และอีก ${pending - 3} คน` : ''}
               {canEdit
                 ? ' — เลือกตำแหน่งให้ในตารางด้านล่างแล้วกดบันทึกเพื่อเปิดใช้งานบัญชี'
@@ -78,7 +94,7 @@ export default async function AdminPage({
       <div className="grid gap-4 sm:grid-cols-3">
         <Metric
           label="บุคลากรทั้งหมด"
-          value={String(users.length)}
+          value={String(data.summary.total)}
           detail="บัญชีในระบบ"
           icon="users"
         />
@@ -96,7 +112,15 @@ export default async function AdminPage({
         />
       </div>
       <SectionCard className="mt-6" title="รายชื่อบุคลากร">
-        <RoleAssignmentPanel initialUsers={users} canEdit={canEdit} initialQuery={initialQuery} />
+        <RoleAssignmentPanel
+          key={`${initialQuery}|${data.page}`}
+          initialUsers={users}
+          canEdit={canEdit}
+          initialQuery={initialQuery}
+          total={data.total}
+          page={data.page}
+          totalPages={data.totalPages}
+        />
       </SectionCard>
     </AppShell>
   );

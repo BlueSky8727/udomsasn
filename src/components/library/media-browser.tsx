@@ -1,12 +1,14 @@
 // src/components/library/media-browser.tsx
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, type IconName } from '@/components/ui/icons';
 import { MediaCard } from './media-card';
 import { StatusBadge } from '@/components/media/status-badge';
 import { GRADE_LEVELS, SUBJECTS } from '@/constants/media-options';
-import type { DemoMedia } from '@/constants/mock-data';
+import type { MediaListItem } from '@/types/media-view';
 
 /**
  * แถบค้นหาและตัวกรองของหน้าคลังสื่อ
@@ -42,25 +44,31 @@ const EMPTY_SELECTION: Selection = { subject: [], grade: [] };
  * ข้อความทุกช่องที่ให้ค้นหาเจอ รวมเป็นก้อนเดียวเพื่อเทียบทีละคำ
  * ประเภทสื่อไม่มีปุ่มกรองแล้ว แต่ยังค้นเจอจากช่องนี้และยังแสดงในมุมมองรายการ
  */
-const searchableText = (media: DemoMedia) =>
-  [media.title, media.subject, media.grade, media.type, media.author, ...media.tags]
-    .join(' ')
-    .toLowerCase();
-
 export function MediaBrowser({
   media,
   initialQuery = '',
+  initialSelection = EMPTY_SELECTION,
+  facetOptions,
+  total,
+  page,
+  totalPages,
 }: {
-  media: readonly DemoMedia[];
+  media: readonly MediaListItem[];
   initialQuery?: string;
+  initialSelection?: Selection;
+  facetOptions: Record<FacetKey, readonly string[]>;
+  total: number;
+  page: number;
+  totalPages: number;
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
-  const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION);
+  const [selection, setSelection] = useState<Selection>(initialSelection);
   const [view, setView] = useState<'grid' | 'list'>('grid');
 
   const options = useMemo(() => {
     const build = ({ key, order }: Facet) => {
-      const present = new Set(media.map((item) => item[key]));
+      const present = new Set(facetOptions[key]);
       const known = order.filter((value) => present.has(value));
       const rest = [...present].filter((value) => !order.includes(value)).sort();
       return [...known, ...rest];
@@ -68,23 +76,9 @@ export function MediaBrowser({
     const result = {} as Record<FacetKey, readonly string[]>;
     for (const facet of FACETS) result[facet.key] = build(facet);
     return result;
-  }, [media]);
+  }, [facetOptions]);
 
-  const results = useMemo(() => {
-    const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return media.filter((item) => {
-      // ภายในตัวกรองเดียวกันเลือกหลายค่าได้ = ตรงค่าใดค่าหนึ่งก็พอ แต่ต้องผ่านทุกตัวกรอง
-      const passesFacets = FACETS.every((facet) => {
-        const picked = selection[facet.key];
-        return picked.length === 0 || picked.includes(item[facet.key]);
-      });
-      if (!passesFacets) return false;
-
-      // พิมพ์หลายคำ = ต้องเจอครบทุกคำ ไม่จำเป็นต้องติดกันหรือเรียงตามที่พิมพ์
-      const haystack = searchableText(item);
-      return tokens.every((token) => haystack.includes(token));
-    });
-  }, [media, query, selection]);
+  const results = media;
 
   const pickedCount = FACETS.reduce((sum, facet) => sum + selection[facet.key].length, 0);
   const isFiltered = pickedCount > 0 || query.trim().length > 0;
@@ -92,25 +86,41 @@ export function MediaBrowser({
   const toggleValue = (key: FacetKey, value: string) => {
     setSelection((current) => {
       const picked = current[key];
-      return {
+      const next = {
         ...current,
         [key]: picked.includes(value)
           ? picked.filter((item) => item !== value)
           : [...picked, value],
       };
+      const params = new URLSearchParams();
+      if (query.trim()) params.set('q', query.trim());
+      if (next.subject.length) params.set('subject', next.subject.join(','));
+      if (next.grade.length) params.set('grade', next.grade.join(','));
+      router.push(`/browse${params.size ? `?${params}` : ''}`);
+      return next;
     });
   };
 
   const clearAll = () => {
     setQuery('');
     setSelection(EMPTY_SELECTION);
+    router.push('/browse');
+  };
+
+  const pageHref = (targetPage: number) => {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set('q', query.trim());
+    if (selection.subject.length) params.set('subject', selection.subject.join(','));
+    if (selection.grade.length) params.set('grade', selection.grade.join(','));
+    if (targetPage > 1) params.set('page', String(targetPage));
+    return `/browse${params.size ? `?${params}` : ''}`;
   };
 
   return (
     <>
       <section className="rounded-2xl border border-line/80 bg-panel p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row">
-          <div className="relative flex-1">
+          <form action="/browse" method="get" className="relative flex-1">
             <Icon
               name="search"
               className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
@@ -118,6 +128,7 @@ export function MediaBrowser({
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              name="q"
               aria-label="ค้นหาสื่อการสอน"
               placeholder="ค้นหาชื่อสื่อ เนื้อหา ผู้สอน หรือแท็ก..."
               className="h-11 w-full rounded-xl border border-line bg-surface pl-10 pr-10 text-sm outline-none transition focus:border-brand/40 focus:ring-4 focus:ring-brand/5"
@@ -125,14 +136,22 @@ export function MediaBrowser({
             {query.length > 0 && (
               <button
                 type="button"
-                onClick={() => setQuery('')}
+                onClick={() => {
+                  setQuery('');
+                  const params = new URLSearchParams();
+                  if (selection.subject.length) params.set('subject', selection.subject.join(','));
+                  if (selection.grade.length) params.set('grade', selection.grade.join(','));
+                  router.push(`/browse${params.size ? `?${params}` : ''}`);
+                }}
                 aria-label="ล้างคำค้นหา"
                 className="absolute right-3 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-ink-faint transition-colors hover:bg-panel hover:text-ink"
               >
                 <Icon name="x" className="size-3.5" />
               </button>
             )}
-          </div>
+            {selection.subject.length > 0 && <input type="hidden" name="subject" value={selection.subject.join(',')} />}
+            {selection.grade.length > 0 && <input type="hidden" name="grade" value={selection.grade.join(',')} />}
+          </form>
           <div className="grid grid-cols-2 gap-2 sm:flex">
             {FACETS.map((facet) => (
               <FacetDropdown
@@ -149,8 +168,8 @@ export function MediaBrowser({
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-4">
           <p className="text-xs text-ink-faint">
-            พบ <strong className="text-ink">{results.length}</strong> รายการ
-            {isFiltered ? ` จากทั้งหมด ${media.length} รายการ` : 'ที่พร้อมใช้งานในตัวอย่าง'}
+            พบ <strong className="text-ink">{total}</strong> รายการ
+            {isFiltered ? ' ตามเงื่อนไขที่เลือก' : 'ที่พร้อมใช้งาน'}
             {isFiltered && (
               <button
                 type="button"
@@ -205,6 +224,25 @@ export function MediaBrowser({
             <MediaRow key={item.id} media={item} />
           ))}
         </section>
+      )}
+      {totalPages > 1 && (
+        <nav aria-label="หน้าผลการค้นหา" className="mt-6 flex items-center justify-center gap-2">
+          <Link
+            href={pageHref(Math.max(1, page - 1))}
+            aria-disabled={page <= 1}
+            className={`rounded-lg border border-line px-3 py-2 text-xs font-semibold ${page <= 1 ? 'pointer-events-none opacity-40' : 'hover:border-brand/40 hover:text-brand'}`}
+          >
+            ก่อนหน้า
+          </Link>
+          <span className="px-2 text-xs text-ink-faint">หน้า {page} จาก {totalPages}</span>
+          <Link
+            href={pageHref(Math.min(totalPages, page + 1))}
+            aria-disabled={page >= totalPages}
+            className={`rounded-lg border border-line px-3 py-2 text-xs font-semibold ${page >= totalPages ? 'pointer-events-none opacity-40' : 'hover:border-brand/40 hover:text-brand'}`}
+          >
+            ถัดไป
+          </Link>
+        </nav>
       )}
     </>
   );
@@ -340,7 +378,7 @@ function FacetDropdown({
   );
 }
 
-function MediaRow({ media }: { media: DemoMedia }) {
+function MediaRow({ media }: { media: MediaListItem }) {
   return (
     <article className="flex items-center gap-4 rounded-xl border border-line/80 bg-panel p-4 shadow-sm shadow-black/[0.025] transition-colors hover:border-brand/30">
       <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand">

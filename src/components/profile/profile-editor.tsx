@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { AvatarCropper } from '@/components/ui/avatar-cropper';
 import { Pill } from '@/components/ui/enterprise';
 import { Icon, type IconName } from '@/components/ui/icons';
 import { ROLE_LABELS } from '@/constants/workflow';
@@ -58,6 +59,9 @@ export function ProfileEditor({
   const [phone, setPhone] = useState(viewer.phone ?? '');
   const [avatar, setAvatar] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  /** ไฟล์ต้นฉบับก่อนครอบ เก็บไว้เพื่อกดปรับตำแหน่งซ้ำได้โดยไม่เสียคุณภาพเพิ่ม */
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
+  const [cropSource, setCropSource] = useState<File | null>(null);
   const [avatarVersion, setAvatarVersion] = useState(0);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
@@ -79,6 +83,8 @@ export function ProfileEditor({
     setPhone(account.phone ?? '');
     setAvatar(null);
     setPreviewUrl(null);
+    setSourceFile(null);
+    setCropSource(null);
     setErrors({});
     setEditing(false);
     if (inputRef.current) inputRef.current.value = '';
@@ -95,8 +101,37 @@ export function ProfileEditor({
       setErrors((current) => ({ ...current, avatar: 'รูปโปรไฟล์ต้องมีขนาดไม่เกิน 2 MB' }));
       return;
     }
-    setAvatar(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    // เลือกไฟล์แล้วเข้าหน้าครอบรูปทันที ไฟล์ที่ใช้จริงคือไฟล์ที่ผ่านการครอบแล้ว
+    setSourceFile(file);
+    setCropSource(file);
+  }
+
+  /** ดึงรูปเดิมจากเซิร์ฟเวอร์กลับมาครอบใหม่ โดยไม่ต้องเลือกไฟล์อีกรอบ */
+  async function recropCurrentAvatar() {
+    if (!existingAvatarUrl) return;
+    setErrors((current) => ({ ...current, avatar: undefined, form: undefined }));
+    try {
+      const response = await fetch(existingAvatarUrl);
+      if (!response.ok) throw new Error('โหลดรูปเดิมไม่สำเร็จ');
+      const blob = await response.blob();
+      const current = new File([blob], 'current-avatar', { type: blob.type || 'image/jpeg' });
+      setSourceFile(current);
+      setCropSource(current);
+    } catch {
+      setErrors((current) => ({ ...current, avatar: 'โหลดรูปเดิมไม่สำเร็จ กรุณาเลือกรูปใหม่แทน' }));
+    }
+  }
+
+  function applyCrop(cropped: File) {
+    setCropSource(null);
+    setAvatar(cropped);
+    // effect ด้านบนคืนหน่วยความจำของ URL ก่อนหน้าให้เองเมื่อค่าเปลี่ยน
+    setPreviewUrl(URL.createObjectURL(cropped));
+  }
+
+  function cancelCrop() {
+    setCropSource(null);
+    if (inputRef.current) inputRef.current.value = '';
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -129,6 +164,7 @@ export function ProfileEditor({
       setPhone(updated.phone ?? '');
       setAvatar(null);
       setPreviewUrl(null);
+      setSourceFile(null);
       setAvatarVersion(Date.now());
       setEditing(false);
       setNotice('บันทึกข้อมูลบัญชีเรียบร้อยแล้ว');
@@ -143,6 +179,8 @@ export function ProfileEditor({
 
   return (
     <div>
+      {cropSource && <AvatarCropper source={cropSource} onCancel={cancelCrop} onConfirm={applyCrop} />}
+
       <div className="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-center">
         <span className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-brand to-brand-strong text-xl font-bold text-brand-contrast shadow-lg shadow-brand/15">
           {shownAvatarUrl ? (
@@ -193,8 +231,24 @@ export function ProfileEditor({
                   <Icon name="cloudUpload" className="size-4" />
                   {account.hasAvatar || avatar ? 'เปลี่ยนรูปโปรไฟล์' : 'เพิ่มรูปโปรไฟล์'}
                 </button>
+                {(avatar || account.hasAvatar) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (sourceFile) {
+                        setCropSource(sourceFile);
+                        return;
+                      }
+                      void recropCurrentAvatar();
+                    }}
+                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-panel px-4 text-xs font-semibold transition hover:bg-panel-hover"
+                  >
+                    <Icon name="edit" className="size-4" />
+                    ปรับตำแหน่ง / ครอบรูป
+                  </button>
+                )}
                 <p className="text-[11px] text-ink-faint">
-                  {avatar ? avatar.name : 'PNG, JPG หรือ WebP ขนาดไม่เกิน 2 MB'}
+                  {avatar ? 'ครอบรูปแล้ว พร้อมบันทึก' : 'PNG, JPG หรือ WebP ขนาดไม่เกิน 2 MB'}
                 </p>
               </div>
               <input

@@ -4,20 +4,20 @@ import { AppShell } from '@/components/ui/app-shell';
 import { PageHeading } from '@/components/ui/page-heading';
 import { Metric, Pill, SectionCard } from '@/components/ui/enterprise';
 import { Icon } from '@/components/ui/icons';
-import { type DemoFeedback } from '@/constants/mock-data';
-import { backendFetch, toDemoMedia } from '@/lib/backend';
+import { type MediaFeedback } from '@/types/media-view';
+import { backendFetch, toMediaListItem } from '@/lib/backend';
 import { MEDIA_STATUS, STATUS_LABELS, USER_ROLE } from '@/constants/workflow';
 import { getViewerRole } from '@/lib/auth';
 import type { BackendMedia } from '@/types/backend';
 
-const FEEDBACK_LABEL: Record<DemoFeedback['decision'], string> = {
+const FEEDBACK_LABEL: Record<MediaFeedback['decision'], string> = {
   REVISION: 'ให้แก้ไข',
   MINOR_REVISION: 'แก้ไขเล็กน้อย',
   REJECTED: 'ไม่ผ่าน',
   APPROVED: 'ผ่านแล้ว',
 };
 
-const feedbackTone = (decision: DemoFeedback['decision']) =>
+const feedbackTone = (decision: MediaFeedback['decision']) =>
   decision === 'APPROVED'
     ? ('ok' as const)
     : decision === 'REJECTED'
@@ -68,8 +68,8 @@ export default async function MyMedia({
     : 'all';
 
   // คัดเฉพาะของเจ้าของตั้งแต่ฝั่งเซิร์ฟเวอร์ ห้ามส่งข้อมูลของคนอื่นไปซ่อนในเบราว์เซอร์
-  let mine: ReturnType<typeof toDemoMedia>[] = [];
-  try { mine = (await backendFetch<BackendMedia[]>('/media/mine')).map(toDemoMedia); } catch { mine = []; }
+  let mine: ReturnType<typeof toMediaListItem>[] = [];
+  try { mine = (await backendFetch<BackendMedia[]>('/media/mine')).map(toMediaListItem); } catch { mine = []; }
   const drafts = mine.filter((media) => media.status === MEDIA_STATUS.DRAFT);
   const submitted = mine.filter((media) => media.status !== MEDIA_STATUS.DRAFT);
   const underReview = mine.filter(

@@ -48,3 +48,7 @@ jobs:
         working-directory: backend
       - run: npm run test:integration
         working-directory: backend
+      - run: npm run prisma:seed
+        working-directory: backend
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

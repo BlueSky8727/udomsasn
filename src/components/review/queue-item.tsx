@@ -1,9 +1,9 @@
 // src/components/review/queue-item.tsx
 import { Icon } from '@/components/ui/icons';
 import { StatusBadge } from '@/components/media/status-badge';
-import type { DemoMedia } from '@/constants/mock-data';
+import type { MediaListItem } from '@/types/media-view';
 
-export function QueueItem({ media, mine = false }: { media: DemoMedia; mine?: boolean }) {
+export function QueueItem({ media, mine = false }: { media: MediaListItem; mine?: boolean }) {
   return (
     <article className="flex flex-col gap-4 rounded-2xl border border-line/80 bg-panel p-5 shadow-sm shadow-black/[0.02] sm:flex-row sm:items-center">
       <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand">

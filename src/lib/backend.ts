@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import type { DemoFeedback, DemoMedia } from '@/constants/mock-data';
+import type { MediaFeedback, MediaListItem } from '@/types/media-view';
 import type { ReviewJob } from '@/constants/enterprise-data';
 import type { BackendMedia, BackendReview } from '@/types/backend';
 import { ACCESS_TOKEN_COOKIE } from '@/constants/auth';
@@ -32,11 +32,11 @@ function latestCompletedReview(reviews: BackendReview[]): BackendReview | undefi
   return reviews.find((review) => Boolean(review.decision)) ?? reviews[0];
 }
 
-export function toDemoMedia(media: BackendMedia): DemoMedia {
+export function toMediaListItem(media: BackendMedia): MediaListItem {
   const review = latestCompletedReview(media.reviews ?? []);
-  let feedback: DemoFeedback | undefined;
+  let feedback: MediaFeedback | undefined;
   if (review?.decision) {
-    const decision: DemoFeedback['decision'] =
+    const decision: MediaFeedback['decision'] =
       review.decision === 'FORWARD' ? 'APPROVED' : review.decision;
     feedback = {
       fromRole: review.stage === 'ACADEMIC' ? 'ACADEMIC_HEAD' : 'SUBJECT_HEAD',

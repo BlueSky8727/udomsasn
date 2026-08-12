@@ -1,4 +1,4 @@
-import type { DemoMedia, ReviewStage } from '@/constants/mock-data';
+import type { ReviewStage } from '@/types/media-view';
 import type { ReviewJob } from '@/constants/enterprise-data';
 import type { MediaStatus, UserRole } from '@/constants/workflow';
 
@@ -17,6 +17,8 @@ export type BackendUser = {
   accountStatus: AccountStatus;
   department: string | null;
   createdAt?: string;
+  /** ใช้เป็นเลขเวอร์ชันของรูปโปรไฟล์ด้วย เปลี่ยนทุกครั้งที่บันทึกข้อมูลบัญชี */
+  updatedAt?: string;
   /** มีรูปโปรไฟล์ไหม ตัว path จริงไม่ถูกส่งออกมาจากเซิร์ฟเวอร์ */
   hasAvatar?: boolean;
 };
@@ -86,6 +88,32 @@ export type BackendMedia = {
   statusLogs: BackendStatusLog[];
 };
 
+export type PublicMediaPage = {
+  items: BackendMedia[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  facets: { subjects: string[]; grades: string[] };
+};
+
+export type UserSearchPage = {
+  items: BackendUser[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  summary: {
+    total: number;
+    pending: number;
+    assigned: number;
+    active: number;
+    unverified: number;
+    pendingUsers: BackendUser[];
+    activeByRole: Record<UserRole, number>;
+  };
+};
+
 export type BackendNotification = {
   id: string;
   title: string;
@@ -105,7 +133,15 @@ export type AnalyticsSummary = {
   averageReviewHours: number;
   monthly: Array<{ month: string; submitted: number; approved: number }>;
   revisionReasons: Array<{ label: string; count: number }>;
+  timeline: Array<{
+    createdAt: string;
+    fromStatus: MediaStatus;
+    toStatus: MediaStatus;
+    reason: string | null;
+    actorName: string;
+    mediaCode: string;
+    mediaTitle: string;
+  }>;
 };
 
-export type DemoMediaResult = DemoMedia;
 export type ReviewJobResult = ReviewJob;

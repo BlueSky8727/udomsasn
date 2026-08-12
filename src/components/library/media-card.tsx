@@ -1,7 +1,7 @@
 // src/components/library/media-card.tsx
 import { Icon } from '@/components/ui/icons';
 import { StatusBadge } from '@/components/media/status-badge';
-import type { DemoMedia } from '@/constants/mock-data';
+import type { MediaListItem } from '@/types/media-view';
 
 const accentMap: Record<string, string> = {
   sky: 'from-sky-500/18 via-cyan-400/8 to-transparent',
@@ -12,7 +12,7 @@ const accentMap: Record<string, string> = {
   indigo: 'from-indigo-500/18 via-blue-400/8 to-transparent',
 };
 
-export function MediaCard({ media }: { media: DemoMedia }) {
+export function MediaCard({ media }: { media: MediaListItem }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-line/80 bg-panel shadow-sm shadow-black/[0.025] transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-xl hover:shadow-brand/5">
       <div

@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useState } from 'react';
 import { Pill } from '@/components/ui/enterprise';
 import { SUBJECTS } from '@/constants/media-options';
 import { ROLE_LABELS, USER_ROLE, type UserRole } from '@/constants/workflow';
@@ -47,35 +48,29 @@ export function RoleAssignmentPanel({
   initialUsers,
   canEdit,
   initialQuery = '',
+  total,
+  page,
+  totalPages,
 }: {
   initialUsers: BackendUser[];
   canEdit: boolean;
   initialQuery?: string;
+  total: number;
+  page: number;
+  totalPages: number;
 }) {
   const [users, setUsers] = useState(initialUsers);
-  const [query, setQuery] = useState(initialQuery);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const visible = useMemo(() => {
-    const tokens = query.trim().toLocaleLowerCase('th').split(/\s+/).filter(Boolean);
-    if (tokens.length === 0) return users;
-    return users.filter((user) => {
-      const haystack = [
-        user.name,
-        user.email,
-        user.phone,
-        user.id,
-        ROLE_LABELS[user.role],
-        user.department,
-        STATUS_LABELS[user.accountStatus],
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLocaleLowerCase('th');
-      return tokens.every((token) => haystack.includes(token));
-    });
-  }, [query, users]);
+  const visible = users;
+
+  const pageHref = (targetPage: number) => {
+    const params = new URLSearchParams();
+    if (initialQuery) params.set('q', initialQuery);
+    if (targetPage > 1) params.set('page', String(targetPage));
+    return `/admin${params.size ? `?${params}` : ''}`;
+  };
 
   const change = (id: string, patch: Partial<BackendUser>) =>
     setUsers((current) => current.map((user) => (user.id === id ? { ...user, ...patch } : user)));
@@ -124,14 +119,19 @@ export function RoleAssignmentPanel({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <form action="/admin" method="get" className="flex w-full max-w-lg gap-2">
         <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          name="q"
+          defaultValue={initialQuery}
           placeholder="ค้นหาชื่อ อีเมล เบอร์โทร ตำแหน่ง หรือกลุ่มสาระ"
-          className="w-full max-w-sm rounded-xl border border-line bg-surface px-3 py-2.5 text-xs outline-none focus:border-brand/45"
+          className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2.5 text-xs outline-none focus:border-brand/45"
         />
+        <button type="submit" className="rounded-xl bg-brand px-4 py-2.5 text-xs font-semibold text-brand-contrast">
+          ค้นหา
+        </button>
+        </form>
         <p className="text-[11px] text-ink-faint">
-          แสดง {visible.length} จาก {users.length} คน
+          แสดง {visible.length} จาก {total} คน
         </p>
       </div>
 
@@ -256,6 +256,26 @@ export function RoleAssignmentPanel({
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <nav aria-label="หน้ารายชื่อบุคลากร" className="mt-4 flex items-center justify-center gap-2">
+          <Link
+            href={pageHref(Math.max(1, page - 1))}
+            aria-disabled={page <= 1}
+            className={`rounded-lg border border-line px-3 py-2 text-xs font-semibold ${page <= 1 ? 'pointer-events-none opacity-40' : 'hover:border-brand/40 hover:text-brand'}`}
+          >
+            ก่อนหน้า
+          </Link>
+          <span className="px-2 text-xs text-ink-faint">หน้า {page} จาก {totalPages}</span>
+          <Link
+            href={pageHref(Math.min(totalPages, page + 1))}
+            aria-disabled={page >= totalPages}
+            className={`rounded-lg border border-line px-3 py-2 text-xs font-semibold ${page >= totalPages ? 'pointer-events-none opacity-40' : 'hover:border-brand/40 hover:text-brand'}`}
+          >
+            ถัดไป
+          </Link>
+        </nav>
+      )}
 
       {notice && (
         <p role="status" className="mt-4 rounded-lg border border-line bg-surface p-3 text-xs text-ink-muted">

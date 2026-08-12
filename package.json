@@ -5,11 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "clean:generated-types": "node scripts/clean-next-types.mjs",
+    "prebuild": "npm run clean:generated-types",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "pretypecheck": "npm run clean:generated-types",
     "typecheck": "tsc --noEmit",
-    "test": "node --no-warnings --experimental-strip-types --test tests/workflow.test.mjs tests/request-security.test.mjs tests/upload.test.mjs tests/extraction.test.mjs"
+    "test": "node --no-warnings --experimental-strip-types --test tests/workflow.test.mjs tests/request-security.test.mjs tests/upload.test.mjs tests/extraction.test.mjs",
+    "test:e2e": "node scripts/run-e2e.mjs"
   },
   "dependencies": {
     "@udomsasn/workflow": "file:packages/workflow",
@@ -19,6 +23,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.18",

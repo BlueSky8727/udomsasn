@@ -15,5 +15,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 tsconfig.tsbuildinfo
+playwright-report/
+test-results/
+blob-report/
 backend/dist/
 backend/uploads/

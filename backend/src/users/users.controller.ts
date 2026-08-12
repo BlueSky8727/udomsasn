@@ -8,12 +8,14 @@ import {
   NotFoundException,
   Param,
   Patch,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { existsSync, unlinkSync } from 'node:fs';
 import { AccountStatus, UserRole } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,10 +35,93 @@ class UpdateUserDto {
   accountStatus?: AccountStatus;
 }
 
+class SearchUsersDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  q?: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize = 25;
+}
+
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly prisma: PrismaService) {}
+
+  @Get('search')
+  async search(@Req() request: AuthenticatedRequest, @Query() query: SearchUsersDto) {
+    const canView: UserRole[] = [UserRole.ADMIN, UserRole.ACADEMIC_HEAD];
+    if (!canView.includes(request.user.role)) throw new ForbiddenException();
+    const search = query.q?.trim();
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' as const } },
+            { email: { contains: search, mode: 'insensitive' as const } },
+            { phone: { contains: search, mode: 'insensitive' as const } },
+            { department: { contains: search, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+    const select = { id: true, email: true, name: true, phone: true, emailVerifiedAt: true, role: true, accountStatus: true, department: true, createdAt: true } as const;
+    const [items, total, allUsers, pending, assigned, active, unverified, activeRoleCounts, pendingPreview] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select,
+        orderBy: { createdAt: 'desc' },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.user.count({ where }),
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { accountStatus: AccountStatus.PENDING } }),
+      this.prisma.user.count({ where: { accountStatus: AccountStatus.ACTIVE, role: { not: UserRole.TEACHER } } }),
+      this.prisma.user.count({ where: { accountStatus: AccountStatus.ACTIVE } }),
+      this.prisma.user.count({ where: { emailVerifiedAt: null } }),
+      this.prisma.user.groupBy({
+        by: ['role'],
+        where: { accountStatus: AccountStatus.ACTIVE },
+        _count: { _all: true },
+      }),
+      this.prisma.user.findMany({
+        where: { accountStatus: AccountStatus.PENDING },
+        select,
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+    return {
+      items,
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+      totalPages: Math.max(1, Math.ceil(total / query.pageSize)),
+      summary: {
+        total: allUsers,
+        pending,
+        assigned,
+        active,
+        unverified,
+        pendingUsers: pendingPreview,
+        activeByRole: Object.fromEntries(
+          Object.values(UserRole).map((role) => [
+            role,
+            activeRoleCounts.find((row) => row.role === role)?._count._all ?? 0,
+          ]),
+        ),
+      },
+    };
+  }
 
   /** ผู้ดูแลระบบและหัวหน้าวิชาการเปิดดูรายชื่อได้ แต่หัวหน้าวิชาการแก้ไขไม่ได้ (ดู PATCH ข้างล่าง) */
   @Get()

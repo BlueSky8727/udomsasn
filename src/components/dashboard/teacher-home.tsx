@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Metric, Pill, SectionCard } from '@/components/ui/enterprise';
 import { Icon } from '@/components/ui/icons';
-import type { DemoMedia } from '@/constants/mock-data';
+import type { MediaListItem } from '@/types/media-view';
 import { MEDIA_STATUS, STATUS_LABELS, type MediaStatus } from '@/constants/workflow';
 
 const statusTone = (status: MediaStatus): 'brand' | 'ok' | 'warn' | 'danger' | 'neutral' => {
@@ -12,7 +12,7 @@ const statusTone = (status: MediaStatus): 'brand' | 'ok' | 'warn' | 'danger' | '
 };
 
 /** แดชบอร์ดอาจารย์ แสดงเฉพาะข้อมูลของเจ้าของสื่อที่ฝั่งเซิร์ฟเวอร์คัดมาแล้ว */
-export function TeacherHome({ name, media }: { name: string; media: readonly DemoMedia[] }) {
+export function TeacherHome({ name, media }: { name: string; media: readonly MediaListItem[] }) {
   const drafts = media.filter((item) => item.status === MEDIA_STATUS.DRAFT);
   const underReview = media.filter(
     (item) =>

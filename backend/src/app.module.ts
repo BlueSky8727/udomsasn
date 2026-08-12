@@ -8,4 +8,5 @@ import { MediaModule } from './media/media.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { NotificationsModule } from './notifications/notifications.module';
-@Module({imports:[ConfigModule.forRoot({isGlobal:true}),PrismaModule,AuthModule,UsersModule,MediaModule,ReviewsModule,AnalyticsModule,NotificationsModule]}) export class AppModule{}
+import { HealthModule } from './health/health.module';
+@Module({imports:[ConfigModule.forRoot({isGlobal:true}),PrismaModule,AuthModule,UsersModule,MediaModule,ReviewsModule,AnalyticsModule,NotificationsModule,HealthModule]}) export class AppModule{}
