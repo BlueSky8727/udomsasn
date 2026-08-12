@@ -1,4 +1,5 @@
 // src/components/library/media-card.tsx
+import Link from 'next/link';
 import { Icon } from '@/components/ui/icons';
 import { StatusBadge } from '@/components/media/status-badge';
 import type { MediaListItem } from '@/types/media-view';
@@ -14,7 +15,11 @@ const accentMap: Record<string, string> = {
 
 export function MediaCard({ media }: { media: MediaListItem }) {
   return (
-    <article className="group overflow-hidden rounded-2xl border border-line/80 bg-panel shadow-sm shadow-black/[0.025] transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-xl hover:shadow-brand/5">
+    <Link
+      href={`/browse/${media.id}`}
+      aria-label={`เปิดรายละเอียดสื่อ ${media.title}`}
+      className="group block overflow-hidden rounded-2xl border border-line/80 bg-panel shadow-sm shadow-black/[0.025] transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-xl hover:shadow-brand/5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20"
+    >
       <div
         className={`relative h-36 overflow-hidden bg-gradient-to-br ${accentMap[media.accent] ?? accentMap.sky}`}
       >
@@ -53,6 +58,6 @@ export function MediaCard({ media }: { media: MediaListItem }) {
           </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }

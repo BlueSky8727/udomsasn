@@ -28,6 +28,8 @@ export type BackendFile = {
   name: string;
   mimeType: string;
   size: number;
+  /** เวอร์ชันของสื่อตอนที่ไฟล์นี้ถูกแนบ ไฟล์รอบเก่ายังอยู่ครบ จึงต้องแยกให้เห็น */
+  version: number;
   createdAt: string;
 };
 
@@ -39,6 +41,8 @@ export type BackendReviewItem = {
 
 export type BackendReview = {
   id: string;
+  /** เวอร์ชันของสื่อที่ผลตรวจรอบนี้ตัดสิน คอมเมนต์ผูกกับเวอร์ชัน ไม่ใช่ผูกกับตัวสื่อ */
+  mediaVersion: number;
   stage: ReviewStage;
   decision: ReviewDecision | null;
   summary: string | null;

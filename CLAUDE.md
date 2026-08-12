@@ -70,17 +70,26 @@ AI เป็นแค่ผู้ช่วยคัดกรอง เขีย�
 
 ```
 src/app/(auth)/login
-src/app/(teacher)/submit, my-media
-src/app/(admin)/queue, review/[id]
-src/app/browse
-src/app/api/media, review, ai-check
-src/components/ui, media, review
-src/lib/supabase, storage, extract, ai
-src/constants          workflow.ts อยู่ที่นี่
+src/app/(teacher)/submit, my-media, my-media/[id], feedback
+src/app/(admin)/queue
+src/app/review/[id]                    หน้าตรวจของผู้ตรวจทั้งสองระดับ
+src/app/browse, browse/[id]
+src/app/admin, analytics, notifications, profile
+src/app/api/auth                       ออก/ล้าง cookie จาก JWT ของ backend
+src/app/api/ai                         เรียก Typhoon ฝั่งเซิร์ฟเวอร์
+src/app/api/backend/[...path]          proxy ไป NestJS พร้อมแนบ Authorization
+src/components/ui, media, review, library, dashboard, auth, admin, profile, notifications
+src/lib                                auth, backend, ai/typhoon, review-access, request-security
+src/constants                          workflow.ts อยู่ที่นี่
 src/types
+packages/workflow                      ตาราง TRANSITIONS ที่ frontend และ backend ใช้ร่วมกัน
 docs
-supabase/migrations
+backend/src                            NestJS: auth, media, reviews, analytics, notifications, mail, health
+backend/prisma/migrations
 ```
+
+ไฟล์อัปโหลดเก็บใน `UPLOAD_DIR` ของ backend (ค่าเริ่มต้น `backend/uploads`) ไม่ได้ใช้ Supabase
+การเข้าถึงไฟล์ต้องผ่าน `GET /media/:id/files/:fileId/download` ที่ตรวจสิทธิ์ทุกครั้งเท่านั้น
 
 ## ข้อควรระวังตอนเขียนโค้ด
 

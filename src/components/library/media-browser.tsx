@@ -380,7 +380,11 @@ function FacetDropdown({
 
 function MediaRow({ media }: { media: MediaListItem }) {
   return (
-    <article className="flex items-center gap-4 rounded-xl border border-line/80 bg-panel p-4 shadow-sm shadow-black/[0.025] transition-colors hover:border-brand/30">
+    <Link
+      href={`/browse/${media.id}`}
+      aria-label={`เปิดรายละเอียดสื่อ ${media.title}`}
+      className="flex items-center gap-4 rounded-xl border border-line/80 bg-panel p-4 shadow-sm shadow-black/[0.025] transition-colors hover:border-brand/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20"
+    >
       <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand">
         <Icon name="book" className="size-5" />
       </div>
@@ -400,6 +404,6 @@ function MediaRow({ media }: { media: MediaListItem }) {
           {media.downloads}
         </span>
       </div>
-    </article>
+    </Link>
   );
 }

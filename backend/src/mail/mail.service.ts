@@ -112,6 +112,32 @@ export class MailService implements OnModuleInit {
     }
   }
 
+  /**
+   * แจ้งความเคลื่อนไหวของสื่อ — ผลตรวจถึงอาจารย์ หรือมีงานเข้าคิวถึงผู้ตรวจ
+   *
+   * ไม่ throw เพราะการเปลี่ยนสถานะถูก commit ไปแล้วตอนถูกเรียก
+   * ถ้าเมลล่มแล้วโยน error ออกไป ผู้ใช้จะเห็นว่ากดไม่สำเร็จทั้งที่สถานะเปลี่ยนจริง
+   * การแจ้งเตือนในระบบ (ตาราง Notification) เขียนใน transaction เดียวกับสถานะอยู่แล้ว จึงไม่หายไปด้วย
+   */
+  async sendMediaNotification(
+    to: string,
+    name: string,
+    subject: string,
+    lines: readonly string[],
+  ): Promise<void> {
+    const text = [`เรียน ${name}`, '', ...lines, '', 'อีเมลฉบับนี้ส่งจากระบบอัตโนมัติ ไม่ต้องตอบกลับ'].join('\n');
+
+    if (!this.transporter) {
+      this.logger.log(`[DEV] แจ้งเตือนถึง ${to}: ${subject}`);
+      return;
+    }
+    try {
+      await this.transporter.sendMail({ from: this.from, to, subject, text });
+    } catch (error) {
+      this.logger.error(`ส่งอีเมลแจ้งความเคลื่อนไหวไปยัง ${to} ไม่สำเร็จ`, error as Error);
+    }
+  }
+
   /** ใช้โดยสคริปต์ `npm run mail:test` เพื่อยิงอีเมลทดสอบก่อนเปิดใช้งานจริง */
   async sendTestEmail(to: string): Promise<void> {
     if (!this.transporter) throw new Error('ยังไม่ได้ตั้งค่า SMTP_HOST');

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -16,6 +17,7 @@ import { STATUS_LABELS } from '@udomsasn/workflow';
 import { existsSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 import type { JwtUser } from '../auth/auth.types';
+import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { extractTextFromFile } from './text-extractor';
 import { removeStoredFiles } from './upload-security';
@@ -33,7 +35,7 @@ const mediaInclude = {
   owner: { select: { id: true, name: true, email: true, department: true } },
   assignee: { select: { id: true, name: true } },
   files: {
-    select: { id: true, name: true, mimeType: true, size: true, createdAt: true },
+    select: { id: true, name: true, mimeType: true, size: true, version: true, createdAt: true },
     orderBy: { createdAt: 'desc' as const },
   },
   reviews: {
@@ -52,7 +54,7 @@ const mediaInclude = {
 
 const publicMediaInclude = {
   owner: { select: { name: true } },
-  files: { select: { id: true, name: true, mimeType: true, size: true, createdAt: true } },
+  files: { select: { id: true, name: true, mimeType: true, size: true, version: true, createdAt: true } },
 } satisfies Prisma.MediaInclude;
 
 type MediaRecord = Prisma.MediaGetPayload<{ include: typeof mediaInclude }>;
@@ -90,6 +92,38 @@ export type PublicMediaQuery = {
   pageSize: number;
 };
 
+/**
+ * อีเมลที่รอส่งหลัง transaction commit
+ *
+ * เก็บเป็นรายการก่อนแล้วส่งทีหลัง เพราะการส่งเมลเป็น side effect ที่ย้อนกลับไม่ได้
+ * ถ้ายิงเมลอยู่ใน transaction แล้ว transaction rollback ผู้รับจะได้อีเมลแจ้งเรื่องที่ไม่เกิดขึ้น
+ */
+type PendingMail = {
+  to: string;
+  name: string;
+  subject: string;
+  lines: string[];
+};
+
+/** ข้อมูลของสื่อเท่าที่ต้องใช้ประกอบข้อความแจ้งเตือน */
+type NotifiableMedia = {
+  id: string;
+  code: string;
+  title: string;
+  ownerId: string;
+  subjectGroup: string;
+};
+
+/** สถานะที่เจ้าของสื่อต้องรู้ผลทันที เพราะมีงานให้ทำต่อหรือจบกระบวนการแล้ว */
+const OWNER_ALERT_STATUSES: readonly MediaStatus[] = [
+  MediaStatus.REVISION,
+  MediaStatus.ACADEMIC_REVISION,
+  MediaStatus.APPROVED,
+  MediaStatus.REJECTED,
+];
+
+const appUrl = () => (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+
 const csvValues = (value?: string) =>
   value
     ?.split(',')
@@ -99,7 +133,117 @@ const csvValues = (value?: string) =>
 
 @Injectable()
 export class MediaService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(MediaService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
+
+  /**
+   * เขียนแจ้งเตือนในระบบให้ทุกคนที่ต้องรู้ และคืนรายการอีเมลที่ต้องส่งหลัง commit
+   *
+   * เจ้าของได้รับเมื่อมีผลตรวจกลับมา ผู้ตรวจได้รับเมื่อมีงานเข้าคิวของตัวเอง
+   * ถ้าไม่แจ้งขาเข้าคิว ผู้ตรวจต้องเปิดหน้าคิวเช็คเองซึ่งทำให้งานค้างเกิน SLA ได้ง่าย
+   */
+  private async notifyTransition(
+    tx: Transaction,
+    media: NotifiableMedia,
+    to: MediaStatus,
+    reason: string | undefined,
+    mails: PendingMail[],
+  ): Promise<void> {
+    const statusLabel = STATUS_LABELS[to];
+    const base = appUrl();
+
+    if (OWNER_ALERT_STATUSES.includes(to)) {
+      const owner = await tx.user.findUnique({
+        where: { id: media.ownerId },
+        select: { email: true, name: true },
+      });
+      const href = `/my-media/${media.id}`;
+      await tx.notification.create({
+        data: {
+          userId: media.ownerId,
+          title: 'สถานะสื่อมีการเปลี่ยนแปลง',
+          message: `สถานะใหม่: ${statusLabel}${reason ? ` · ${reason}` : ''}`,
+          href,
+        },
+      });
+      if (owner) {
+        mails.push({
+          to: owner.email,
+          name: owner.name,
+          subject: `ผลตรวจสื่อ ${media.title} — ${statusLabel}`,
+          lines: [
+            `สื่อ "${media.title}" (${media.code}) มีผลตรวจแล้ว`,
+            `สถานะใหม่: ${statusLabel}`,
+            ...(reason ? ['', `หมายเหตุจากผู้ตรวจ: ${reason}`] : []),
+            '',
+            `เปิดดูผลตรวจรายหัวข้อได้ที่ ${base}${href}`,
+          ],
+        });
+      }
+      return;
+    }
+
+    // ขาเข้าคิว: หากลุ่มผู้ตรวจที่รับงานนี้ได้จริงตามตำแหน่งและกลุ่มสาระ
+    const recipients =
+      to === MediaStatus.PENDING
+        ? await tx.user.findMany({
+            where: {
+              role: UserRole.REVIEWER,
+              accountStatus: 'ACTIVE',
+              department: media.subjectGroup,
+            },
+            select: { id: true, email: true, name: true },
+          })
+        : to === MediaStatus.ACADEMIC_REVIEW
+          ? await tx.user.findMany({
+              where: { role: UserRole.ACADEMIC_HEAD, accountStatus: 'ACTIVE' },
+              select: { id: true, email: true, name: true },
+            })
+          : [];
+    if (recipients.length === 0) return;
+
+    const href = `/review/${media.id}`;
+    await tx.notification.createMany({
+      data: recipients.map((recipient) => ({
+        userId: recipient.id,
+        title: 'มีสื่อรอตรวจในคิวของคุณ',
+        message: `${media.title} (${media.code}) · ${statusLabel}`,
+        href,
+      })),
+    });
+    for (const recipient of recipients) {
+      mails.push({
+        to: recipient.email,
+        name: recipient.name,
+        subject: `มีสื่อรอตรวจ: ${media.title}`,
+        lines: [
+          `สื่อ "${media.title}" (${media.code}) เข้าคิวตรวจของคุณแล้ว`,
+          `สถานะ: ${statusLabel}`,
+          '',
+          `เปิดงานเพื่อรับเรื่องได้ที่ ${base}${href}`,
+        ],
+      });
+    }
+  }
+
+  /**
+   * ส่งอีเมลที่ค้างอยู่แบบไม่รอผล
+   *
+   * เรียกหลัง transaction commit เท่านั้น สถานะถูกบันทึกไปแล้ว
+   * ผู้ใช้จึงไม่ควรต้องรอเซิร์ฟเวอร์เมลตอบก่อนเห็นผลการกดปุ่ม
+   */
+  private dispatchMails(mails: readonly PendingMail[]): void {
+    if (mails.length === 0) return;
+    void Promise.all(
+      mails.map((mail) => this.mail.sendMediaNotification(mail.to, mail.name, mail.subject, mail.lines)),
+    ).catch((error: Error) => {
+      this.logger.error(`ส่งอีเมลแจ้งเตือนไม่สำเร็จ: ${error.message}`);
+    });
+  }
 
   private code(): string {
     const date = new Date().toISOString().slice(2, 10).replaceAll('-', '');
@@ -163,7 +307,8 @@ export class MediaService {
       });
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const mails: PendingMail[] = [];
+    const created = await this.prisma.$transaction(async (tx) => {
       const media = await tx.media.create({
         data: {
           code: this.code(),
@@ -203,14 +348,18 @@ export class MediaService {
           where: { id: media.id },
           data: { status: MediaStatus.PENDING, reviewStage: ReviewStage.SUBJECT_GROUP },
         });
+        await this.notifyTransition(tx, media, MediaStatus.PENDING, undefined, mails);
       }
       return tx.media.findUniqueOrThrow({ where: { id: media.id }, include: mediaInclude });
     });
+    this.dispatchMails(mails);
+    return created;
   }
 
   async update(user: JwtUser, id: string, input: MediaInput, files: Express.Multer.File[]) {
     if (user.role !== UserRole.TEACHER) throw new ForbiddenException();
-    return this.prisma.$transaction(async (tx) => {
+    const mails: PendingMail[] = [];
+    const updated = await this.prisma.$transaction(async (tx) => {
       const current = await tx.media.findUnique({
         where: { id },
         include: { files: true, reviews: { include: { items: true } } },
@@ -289,11 +438,13 @@ export class MediaService {
           version: nextVersion,
           ...(input.submit ? { status: target, reviewStage: target === MediaStatus.PENDING ? ReviewStage.SUBJECT_GROUP : ReviewStage.ACADEMIC, assigneeId: null } : {}),
           files: {
+            // ไฟล์ที่แนบมารอบนี้เป็นของเวอร์ชันใหม่ ไฟล์เก่ายังอยู่ครบและคงเลขเวอร์ชันเดิมไว้
             create: files.map((file) => ({
               name: file.originalname,
               mimeType: file.mimetype,
               size: file.size,
               path: file.path,
+              version: nextVersion,
             })),
           },
         },
@@ -302,9 +453,12 @@ export class MediaService {
         await tx.statusLog.create({
           data: { mediaId: id, actorId: user.sub, fromStatus: current.status, toStatus: target },
         });
+        await this.notifyTransition(tx, { ...current, subjectGroup: merged.subjectGroup?.trim() || current.subjectGroup }, target, undefined, mails);
       }
       return tx.media.findUniqueOrThrow({ where: { id }, include: mediaInclude });
     });
+    this.dispatchMails(mails);
+    return updated;
   }
 
   mine(ownerId: string) {
@@ -400,7 +554,8 @@ export class MediaService {
   }
 
   async transition(id: string, user: JwtUser, to: MediaStatus, reason?: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const mails: PendingMail[] = [];
+    const result = await this.prisma.$transaction(async (tx) => {
       const media = await tx.media.findUnique({ where: { id }, include: { files: true } });
       if (!media) throw new NotFoundException();
       assertMediaTransition(media.status, to, {
@@ -414,24 +569,27 @@ export class MediaService {
       if (media.status === MediaStatus.PENDING && to === MediaStatus.IN_REVIEW) {
         const reviewer = await tx.user.findUnique({ where: { id: user.sub }, select: { department: true } });
         if (!reviewer?.department || reviewer.department !== media.subjectGroup) throw new ForbiddenException();
-        return this.applyTransition(tx, media, user, to, reason, user.sub);
+        return this.applyTransition(tx, media, user, to, reason, mails, user.sub);
       }
       if (media.status === MediaStatus.IN_REVIEW && to === MediaStatus.PENDING) {
-        return this.applyTransition(tx, media, user, to, reason, null);
+        return this.applyTransition(tx, media, user, to, reason, mails, null);
       }
       if (media.status === MediaStatus.APPROVED && to === MediaStatus.ARCHIVED) {
-        return this.applyTransition(tx, media, user, to, reason, null);
+        return this.applyTransition(tx, media, user, to, reason, mails, null);
       }
       throw new BadRequestException('การเปลี่ยนสถานะนี้ต้องทำผ่านขั้นตอนที่กำหนด');
     });
+    this.dispatchMails(mails);
+    return result;
   }
 
   private async applyTransition(
     tx: Transaction,
-    media: { id: string; ownerId: string; status: MediaStatus; assigneeId: string | null },
+    media: NotifiableMedia & { status: MediaStatus; assigneeId: string | null },
     user: JwtUser,
     to: MediaStatus,
-    reason?: string,
+    reason: string | undefined,
+    mails: PendingMail[],
     assigneeId: string | null = media.assigneeId,
   ) {
     await tx.statusLog.create({
@@ -443,21 +601,13 @@ export class MediaService {
         ? ReviewStage.SUBJECT_GROUP
         : undefined;
     await tx.media.update({ where: { id: media.id }, data: { status: to, assigneeId, reviewStage } });
-    if ((<MediaStatus[]>[MediaStatus.REVISION, MediaStatus.REJECTED, MediaStatus.APPROVED, MediaStatus.ACADEMIC_REVISION]).includes(to)) {
-      await tx.notification.create({
-        data: {
-          userId: media.ownerId,
-          title: 'สถานะสื่อมีการเปลี่ยนแปลง',
-          message: `สถานะใหม่: ${STATUS_LABELS[to]}${reason ? ` · ${reason}` : ''}`,
-          href: `/my-media/${media.id}`,
-        },
-      });
-    }
+    await this.notifyTransition(tx, media, to, reason, mails);
     return tx.media.findUniqueOrThrow({ where: { id: media.id }, include: mediaInclude });
   }
 
   async saveReview(mediaId: string, user: JwtUser, payload: ReviewPayload, complete: boolean) {
-    return this.prisma.$transaction(async (tx) => {
+    const mails: PendingMail[] = [];
+    const result = await this.prisma.$transaction(async (tx) => {
       const media = await tx.media.findUnique({ where: { id: mediaId } });
       if (!media) throw new NotFoundException();
       const isAcademic = user.role === UserRole.ACADEMIC_HEAD;
@@ -502,7 +652,9 @@ export class MediaService {
           create: { reviewId: review.id, topicId, result: result ?? null, comment: comment || null },
         });
       }
-      if (!complete) return tx.review.findUniqueOrThrow({ where: { id: review.id }, include: { items: true } });
+      if (!complete) {
+        return tx.review.findUniqueOrThrow({ where: { id: review.id }, include: { items: true } });
+      }
 
       const items = await tx.reviewItem.findMany({ where: { reviewId: review.id } });
       const to = payload.to;
@@ -533,8 +685,10 @@ export class MediaService {
         where: { id: review.id },
         data: { decision, completedAt: new Date(), summary: payload.summary?.trim() },
       });
-      return this.applyTransition(tx, media, user, to, reason, to === MediaStatus.ACADEMIC_REVIEW ? null : media.assigneeId);
+      return this.applyTransition(tx, media, user, to, reason, mails, to === MediaStatus.ACADEMIC_REVIEW ? null : media.assigneeId);
     });
+    this.dispatchMails(mails);
+    return result;
   }
 
   async remove(id: string, user: JwtUser) {
@@ -562,10 +716,15 @@ export class MediaService {
     const relativePath = relative(uploadRoot, absolutePath);
     if (relativePath.startsWith('..') || isAbsolute(relativePath)) throw new ForbiddenException();
     if (!existsSync(absolutePath)) throw new NotFoundException('ไม่พบไฟล์ในระบบจัดเก็บ');
-    await this.prisma.$transaction([
-      this.prisma.download.create({ data: { mediaId, userId: user.sub } }),
-      this.prisma.media.update({ where: { id: mediaId }, data: { downloadCount: { increment: 1 } } }),
-    ]);
+    await this.prisma.$transaction(async (tx) => {
+      // downloadCount คือ "มีคนหยิบสื่อชิ้นนี้ไปใช้กี่คน" ไม่ใช่จำนวนครั้งที่กดปุ่ม
+      // สื่อชุดหนึ่งมักมีหลายไฟล์ ถ้านับทุกไฟล์ คนเดียวโหลดครบชุดจะกลายเป็นหลายคน
+      const previous = await tx.download.findFirst({ where: { mediaId, userId: user.sub } });
+      await tx.download.create({ data: { mediaId, userId: user.sub } });
+      if (!previous) {
+        await tx.media.update({ where: { id: mediaId }, data: { downloadCount: { increment: 1 } } });
+      }
+    });
     return { ...file, absolutePath };
   }
 

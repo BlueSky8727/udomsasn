@@ -1,3 +1,5 @@
+import type { ReviewDecision } from '@/types/backend';
+
 export const REVIEW_TOPIC_IDS = [
   'learning_objectives',
   'learning_content',
@@ -43,3 +45,21 @@ export const REVIEW_TOPICS: readonly ReviewTopic[] = [
       'ตรวจไฟล์และหมายเหตุเพิ่มเติม รวมถึงความครบถ้วน แหล่งที่มา สิทธิ์การใช้ และข้อมูลส่วนบุคคล',
   },
 ];
+
+/** ผลการตัดสินของผู้ตรวจแต่ละรอบ (กฎเหล็กข้อ 9: UI เป็นภาษาไทย) */
+export const REVIEW_DECISION_LABELS: Record<ReviewDecision, string> = {
+  FORWARD: 'ส่งต่อหัวหน้าวิชาการ',
+  REVISION: 'ส่งกลับแก้ไข',
+  MINOR_REVISION: 'ส่งกลับแก้ไขเล็กน้อย',
+  APPROVED: 'อนุมัติเผยแพร่',
+  REJECTED: 'ไม่ผ่าน',
+};
+
+/** โทนป้ายของผลการตัดสิน ให้สายผ่านเป็นเขียว สายแก้ไขเป็นเหลือง สายไม่ผ่านเป็นแดง */
+export const REVIEW_DECISION_TONES: Record<ReviewDecision, 'ok' | 'warn' | 'danger'> = {
+  FORWARD: 'ok',
+  REVISION: 'warn',
+  MINOR_REVISION: 'warn',
+  APPROVED: 'ok',
+  REJECTED: 'danger',
+};

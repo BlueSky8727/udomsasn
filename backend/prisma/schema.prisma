@@ -143,11 +143,13 @@ model MediaFile {
   mimeType  String
   size      Int
   path      String
+  /// เวอร์ชันของสื่อตอนที่ไฟล์นี้ถูกแนบเข้ามา ไฟล์เก่าไม่ถูกทับ จึงต้องบอกได้ว่ามาจากรอบไหน
+  version   Int      @default(1)
   createdAt DateTime @default(now())
 
   media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
 
-  @@index([mediaId])
+  @@index([mediaId, version])
 }
 
 model MediaVersion {

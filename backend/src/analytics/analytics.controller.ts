@@ -15,11 +15,12 @@ export class AnalyticsController {
     const since = new Date();
     since.setMonth(since.getMonth() - 11, 1);
     since.setHours(0, 0, 0, 0);
-    const [all, approved, pending, downloads, users, media, statusLogs, completedReviews, recentStatusLogs] = await Promise.all([
+    const [all, approved, pending, downloadTotals, users, media, statusLogs, completedReviews, recentStatusLogs] = await Promise.all([
       this.prisma.media.count(),
       this.prisma.media.count({ where: { status: MediaStatus.APPROVED } }),
       this.prisma.media.count({ where: { status: { in: [MediaStatus.PENDING, MediaStatus.IN_REVIEW, MediaStatus.ACADEMIC_REVIEW] } } }),
-      this.prisma.download.count(),
+      // นับตาม downloadCount ของสื่อ ซึ่งคือจำนวนคนที่หยิบไปใช้ ไม่ใช่จำนวนครั้งที่กดปุ่มดาวน์โหลด
+      this.prisma.media.aggregate({ _sum: { downloadCount: true } }),
       this.prisma.user.count(),
       this.prisma.media.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true, status: true } }),
       this.prisma.statusLog.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true, toStatus: true, reason: true } }),
@@ -74,7 +75,7 @@ export class AnalyticsController {
       all,
       approved,
       pending,
-      downloads,
+      downloads: downloadTotals._sum.downloadCount ?? 0,
       users,
       approvalRate: all ? Math.round((approved / all) * 100) : 0,
       averageReviewHours,

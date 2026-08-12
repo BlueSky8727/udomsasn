@@ -35,7 +35,9 @@ export function AppShell({
       : pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
   const currentPage = pathname === '/profile' ? 'ข้อมูลของฉัน' : (activeItem?.label ?? 'ระบบคลังสื่อ');
-  const displayName = viewerName ?? ROLE_LABELS[role];
+  // ชื่อจริงมาจาก session ผ่าน ViewerProvider ที่ layout แล้ว หน้าแต่ละหน้าจึงไม่ต้องส่ง prop ซ้ำ
+  // เหลือ ROLE_LABELS ไว้เป็นทางสุดท้ายเผื่อ context ยังไม่พร้อม
+  const displayName = viewerName ?? viewer?.name ?? ROLE_LABELS[role];
   const avatarLabel =
     role === 'TEACHER' ? 'อจ' : role === 'REVIEWER' ? 'ผต' : role === 'ACADEMIC_HEAD' ? 'วก' : 'AD';
 
