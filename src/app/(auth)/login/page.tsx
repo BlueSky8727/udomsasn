@@ -63,7 +63,7 @@ export default function LoginPage() {
             <Link href="/" className="flex items-center gap-3">
               <SchoolLogo className="size-14" />
               <div>
-                <strong className="block text-navy dark:text-white">Udomsasn Media QA</strong>
+                <strong className="block text-navy">Udomsasn Media QA</strong>
                 <span className="text-[11px] text-ink-faint">ระบบคลังและตรวจสื่อการสอน</span>
               </div>
             </Link>

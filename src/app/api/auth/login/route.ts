@@ -6,7 +6,6 @@ import { isSameOriginRequest, readJsonBody, RequestSecurityError, takeRateLimit 
 const LoginBody = z.object({
   email: z.string().email().max(254),
   password: z.string().min(1).max(200),
-  remember: z.boolean().default(true),
 });
 
 export async function POST(request: Request) {
@@ -43,12 +42,13 @@ export async function POST(request: Request) {
     }
     const data = (await backendResponse.json()) as { accessToken: string; user: unknown };
     const response = NextResponse.json({ user: data.user });
+    // ไม่ตั้ง maxAge/expires โดยตั้งใจ — เป็น session cookie ที่หายไปเมื่อปิดเบราว์เซอร์
+    // เครื่องในโรงเรียนใช้ร่วมกันหลายคน เปิดเว็บใหม่จึงต้องเจอหน้าล็อกอินเสมอ
     response.cookies.set(ACCESS_TOKEN_COOKIE, data.accessToken, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      maxAge: body.remember ? 7 * 24 * 60 * 60 : undefined,
     });
     return response;
   } catch (error) {

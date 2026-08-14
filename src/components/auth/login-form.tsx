@@ -39,8 +39,6 @@ export function LoginForm({ verifiedEmail, resetEmail, onForgotPassword }: Login
   const [email, setEmail] = useState(verifiedEmail ?? resetEmail ?? '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  /** ตอนเชื่อมจริงค่านี้จะไปกำหนดว่า session อยู่ถาวรหรือหมดอายุเมื่อปิดเบราว์เซอร์ */
-  const [remember, setRemember] = useState(true);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -55,7 +53,7 @@ export function LoginForm({ verifiedEmail, resetEmail, onForgotPassword }: Login
     if (errors.email || errors.password) return;
 
     setSubmitting(true);
-    const result = await signIn(credentials, { remember });
+    const result = await signIn(credentials);
     setSubmitting(false);
 
     if (result.ok) {
@@ -165,16 +163,11 @@ export function LoginForm({ verifiedEmail, resetEmail, onForgotPassword }: Login
           )}
         </div>
 
-        <label className="flex items-center gap-2 text-xs text-ink-muted">
-          <input
-            type="checkbox"
-            checked={remember}
-            onChange={(event) => setRemember(event.target.checked)}
-            disabled={submitting}
-            className="size-4 accent-[var(--brand)]"
-          />
-          จดจำการเข้าสู่ระบบบนอุปกรณ์นี้
-        </label>
+        {/* ไม่มีตัวเลือกจดจำการเข้าสู่ระบบ เพราะเครื่องในโรงเรียนใช้ร่วมกัน */}
+        <p className="flex items-center gap-2 text-xs text-ink-faint">
+          <Icon name="shield" className="size-3.5 shrink-0" />
+          ระบบจะออกจากระบบให้อัตโนมัติเมื่อปิดเบราว์เซอร์
+        </p>
 
         {notice && (
           <div

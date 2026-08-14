@@ -2,18 +2,15 @@
 
 export type Credentials = { email: string; password: string };
 /** ไม่มี role เพราะตำแหน่งมาจากที่ผู้ดูแลระบบตั้งไว้ ไม่ใช่สิ่งที่ผู้ใช้เลือกตอนล็อกอิน */
-export type SignInOptions = { remember: boolean };
 export type SignInResult = { ok: true } | { ok: false; message: string };
 
-export async function signIn(
-  credentials: Credentials,
-  options: SignInOptions,
-): Promise<SignInResult> {
+/** ไม่มีตัวเลือกจดจำการเข้าสู่ระบบ session หมดอายุเมื่อปิดเบราว์เซอร์เสมอ */
+export async function signIn(credentials: Credentials): Promise<SignInResult> {
   try {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...credentials, remember: options.remember }),
+      body: JSON.stringify(credentials),
     });
     const data = (await response.json()) as { error?: string };
     if (!response.ok) {
